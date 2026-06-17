@@ -1,4 +1,4 @@
-"""应急包 ORM 模型。"""
+"""药品台账 ORM 模型。"""
 
 from datetime import date, datetime
 
@@ -8,13 +8,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 
-class EmergencyItem(Base):
-    """应急包物品。"""
+class Medicine(Base):
+    """药品。"""
 
-    __tablename__ = "emergency_items"
+    __tablename__ = "medicines"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    specification: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     last_check_date: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -23,30 +24,31 @@ class EmergencyItem(Base):
         DateTime, nullable=False, default=datetime.utcnow
     )
 
-    check_records: Mapped[list["CheckRecord"]] = relationship(
-        "CheckRecord",
-        back_populates="item",
+    check_records: Mapped[list["InventoryRecord"]] = relationship(
+        "InventoryRecord",
+        back_populates="medicine",
         cascade="all, delete-orphan",
-        order_by="CheckRecord.check_date.desc()",
+        order_by="InventoryRecord.check_date.desc()",
     )
 
 
-class CheckRecord(Base):
-    """物品检查记录。"""
+class InventoryRecord(Base):
+    """盘点记录。"""
 
-    __tablename__ = "check_records"
+    __tablename__ = "inventory_records"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    item_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("emergency_items.id", ondelete="CASCADE"), nullable=False
+    medicine_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("medicines.id", ondelete="CASCADE"), nullable=False
     )
     check_date: Mapped[date] = mapped_column(Date, nullable=False)
+    quantity_checked: Mapped[int | None] = mapped_column(Integer, nullable=True)
     note: Mapped[str | None] = mapped_column(String(500), nullable=True)
     next_check_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
 
-    item: Mapped["EmergencyItem"] = relationship(
-        "EmergencyItem", back_populates="check_records"
+    medicine: Mapped["Medicine"] = relationship(
+        "Medicine", back_populates="check_records"
     )

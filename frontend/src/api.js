@@ -6,9 +6,10 @@ const api = axios.create({
 });
 
 /**
- * @typedef {Object} EmergencyItem
+ * @typedef {Object} Medicine
  * @property {number} id
  * @property {string} name
+ * @property {string} specification
  * @property {number} quantity
  * @property {string|null} expiry_date
  * @property {string|null} last_check_date
@@ -18,37 +19,38 @@ const api = axios.create({
  */
 
 /**
- * @typedef {Object} CheckRecord
+ * @typedef {Object} InventoryRecord
  * @property {number} id
- * @property {number} item_id
+ * @property {number} medicine_id
  * @property {string} check_date
+ * @property {number|null} quantity_checked
  * @property {string|null} note
  * @property {string|null} next_check_date
  * @property {string} created_at
  */
 
-/** @returns {Promise<EmergencyItem[]>} */
-export async function fetchItems() {
-  const { data } = await api.get('/items');
+/** @returns {Promise<Medicine[]>} */
+export async function fetchMedicines() {
+  const { data } = await api.get('/medicines');
   return data;
 }
 
 /**
- * @param {number} itemId
- * @returns {Promise<CheckRecord[]>}
+ * @param {number} medicineId
+ * @returns {Promise<InventoryRecord[]>}
  */
-export async function fetchChecks(itemId) {
-  const { data } = await api.get(`/items/${itemId}/checks`);
+export async function fetchRecords(medicineId) {
+  const { data } = await api.get(`/medicines/${medicineId}/records`);
   return data;
 }
 
 /**
- * @param {number} itemId
- * @param {{ check_date: string, note?: string, next_check_date?: string }} payload
- * @returns {Promise<CheckRecord>}
+ * @param {number} medicineId
+ * @param {{ check_date: string, quantity_checked?: number, note?: string, next_check_date?: string }} payload
+ * @returns {Promise<InventoryRecord>}
  */
-export async function createCheck(itemId, payload) {
-  const { data } = await api.post(`/items/${itemId}/checks`, payload);
+export async function createRecord(medicineId, payload) {
+  const { data } = await api.post(`/medicines/${medicineId}/records`, payload);
   return data;
 }
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-DATABASE_URL = f"sqlite:///{DATA_DIR / 'emergency.db'}"
+DATABASE_URL = f"sqlite:///{DATA_DIR / '药品库.db'}"
 
 engine = create_engine(
     DATABASE_URL,

@@ -6,6 +6,7 @@ import {
   DatePicker,
   Form,
   Input,
+  InputNumber,
   Layout,
   Row,
   Space,
@@ -15,25 +16,15 @@ import {
   message,
 } from 'antd';
 import dayjs from 'dayjs';
-import { createCheck, fetchChecks, fetchItems } from './api';
+import { createRecord, fetchMedicines, fetchRecords } from './api';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
-/**
- * 格式化日期显示。
- * @param {string|null|undefined} value
- * @returns {string}
- */
 function formatDate(value) {
   return value ? dayjs(value).format('YYYY-MM-DD') : '—';
 }
 
-/**
- * 根据 status_tags 渲染高亮标签。
- * @param {('expired'|'check_due')[]} tags
- * @returns {import('react').ReactNode}
- */
 function renderStatusTags(tags = []) {
   if (!tags.length) {
     return <Tag color="success">正常</Tag>;
@@ -41,60 +32,61 @@ function renderStatusTags(tags = []) {
   return (
     <Space size={4} wrap>
       {tags.includes('expired') && <Tag color="error">已过期</Tag>}
-      {tags.includes('check_due') && <Tag color="warning">待检查</Tag>}
+      {tags.includes('check_due') && <Tag color="warning">待盘点</Tag>}
     </Space>
   );
 }
 
 export default function App() {
-  const [items, setItems] = useState([]);
+  const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [checks, setChecks] = useState([]);
-  const [checksLoading, setChecksLoading] = useState(false);
+  const [selectedMedicine, setSelectedMedicine] = useState(null);
+  const [records, setRecords] = useState([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
 
-  const loadItems = useCallback(async () => {
+  const loadMedicines = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchItems();
-      setItems(data);
+      const data = await fetchMedicines();
+      setMedicines(data);
     } catch {
-      message.error('加载物品列表失败');
+      message.error('加载药品列表失败');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const loadChecks = useCallback(async (itemId) => {
-    setChecksLoading(true);
+  const loadRecords = useCallback(async (medicineId) => {
+    setRecordsLoading(true);
     try {
-      const data = await fetchChecks(itemId);
-      setChecks(data);
+      const data = await fetchRecords(medicineId);
+      setRecords(data);
     } catch {
-      message.error('加载检查记录失败');
+      message.error('加载盘点记录失败');
     } finally {
-      setChecksLoading(false);
+      setRecordsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadItems();
-  }, [loadItems]);
+    loadMedicines();
+  }, [loadMedicines]);
 
   useEffect(() => {
-    if (selectedItem) {
-      loadChecks(selectedItem.id);
+    if (selectedMedicine) {
+      loadRecords(selectedMedicine.id);
       form.setFieldsValue({
         check_date: dayjs(),
-        next_check_date: selectedItem.next_check_date
-          ? dayjs(selectedItem.next_check_date)
+        quantity_checked: selectedMedicine.quantity,
+        next_check_date: selectedMedicine.next_check_date
+          ? dayjs(selectedMedicine.next_check_date)
           : dayjs().add(90, 'day'),
         note: '',
       });
     }
-  }, [selectedItem, loadChecks, form]);
+  }, [selectedMedicine, loadRecords, form]);
 
   const columns = [
     {
@@ -103,27 +95,33 @@ export default function App() {
       key: 'name',
     },
     {
+      title: '规格',
+      dataIndex: 'specification',
+      key: 'specification',
+      width: 140,
+    },
+    {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
       width: 80,
     },
     {
-      title: '保质期',
+      title: '有效期',
       dataIndex: 'expiry_date',
       key: 'expiry_date',
       width: 120,
       render: (value) => formatDate(value),
     },
     {
-      title: '上次检查',
+      title: '上次盘点日',
       dataIndex: 'last_check_date',
       key: 'last_check_date',
       width: 120,
       render: (value) => formatDate(value),
     },
     {
-      title: '下次检查',
+      title: '下次盘点日',
       dataIndex: 'next_check_date',
       key: 'next_check_date',
       width: 120,
@@ -138,27 +136,24 @@ export default function App() {
     },
   ];
 
-  /**
-   * 提交检查记录。
-   * @param {Object} values
-   */
   async function handleSubmitCheck(values) {
-    if (!selectedItem) return;
+    if (!selectedMedicine) return;
     setSubmitting(true);
     try {
-      await createCheck(selectedItem.id, {
+      await createRecord(selectedMedicine.id, {
         check_date: values.check_date.format('YYYY-MM-DD'),
+        quantity_checked: values.quantity_checked,
         next_check_date: values.next_check_date
           ? values.next_check_date.format('YYYY-MM-DD')
           : undefined,
         note: values.note || undefined,
       });
-      message.success('检查记录已保存');
-      await loadItems();
-      await loadChecks(selectedItem.id);
+      message.success('盘点记录已保存');
+      await loadMedicines();
+      await loadRecords(selectedMedicine.id);
       form.setFieldValue('note', '');
     } catch {
-      message.error('保存检查记录失败');
+      message.error('保存盘点记录失败');
     } finally {
       setSubmitting(false);
     }
@@ -168,44 +163,47 @@ export default function App() {
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ background: '#1677ff', padding: '0 24px' }}>
         <Title level={3} style={{ color: '#fff', margin: '16px 0', lineHeight: 1.4 }}>
-          家庭应急包清单
+          家庭药品台账
         </Title>
       </Header>
-      <Content style={{ padding: 24, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+      <Content style={{ padding: 24, maxWidth: 1400, margin: '0 auto', width: '100%' }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} lg={14}>
-            <Card title="物品清单" bordered={false}>
+          <Col xs={24} lg={15}>
+            <Card title="药品清单" bordered={false}>
               <Table
                 rowKey="id"
                 loading={loading}
                 columns={columns}
-                dataSource={items}
+                dataSource={medicines}
                 pagination={false}
                 size="middle"
                 rowClassName={(record) =>
                   record.status_tags?.length ? 'row-highlight' : ''
                 }
                 onRow={(record) => ({
-                  onClick: () => setSelectedItem(record),
+                  onClick: () => setSelectedMedicine(record),
                   style: {
                     cursor: 'pointer',
                     background:
-                      selectedItem?.id === record.id ? '#e6f4ff' : undefined,
+                      selectedMedicine?.id === record.id ? '#e6f4ff' : undefined,
                   },
                 })}
               />
             </Card>
           </Col>
-          <Col xs={24} lg={10}>
+          <Col xs={24} lg={9}>
             <Card
-              title={selectedItem ? `检查记录 · ${selectedItem.name}` : '检查记录'}
+              title={selectedMedicine ? `盘点记录 · ${selectedMedicine.name}` : '盘点记录'}
               bordered={false}
             >
-              {selectedItem ? (
+              {selectedMedicine ? (
                 <>
                   <Space direction="vertical" size={4} style={{ marginBottom: 16 }}>
                     <Text type="secondary">
-                      当前状态：{renderStatusTags(selectedItem.status_tags)}
+                      当前状态：{renderStatusTags(selectedMedicine.status_tags)}
+                    </Text>
+                    <Text type="secondary">
+                      规格：{selectedMedicine.specification || '—'}
                     </Text>
                   </Space>
                   <Form
@@ -215,38 +213,51 @@ export default function App() {
                     initialValues={{ check_date: dayjs() }}
                   >
                     <Form.Item
-                      label="检查日期"
+                      label="盘点日期"
                       name="check_date"
-                      rules={[{ required: true, message: '请选择检查日期' }]}
+                      rules={[{ required: true, message: '请选择盘点日期' }]}
                     >
                       <DatePicker style={{ width: '100%' }} />
                     </Form.Item>
-                    <Form.Item label="下次检查日" name="next_check_date">
+                    <Form.Item
+                      label="盘点数量"
+                      name="quantity_checked"
+                      rules={[{ required: true, message: '请输入盘点数量' }]}
+                    >
+                      <InputNumber min={0} style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item label="下次盘点日" name="next_check_date">
                       <DatePicker style={{ width: '100%' }} />
                     </Form.Item>
                     <Form.Item label="备注" name="note">
-                      <Input.TextArea rows={3} placeholder="检查情况说明（可选）" />
+                      <Input.TextArea rows={3} placeholder="盘点情况说明（可选）" />
                     </Form.Item>
                     <Form.Item>
                       <Button type="primary" htmlType="submit" loading={submitting}>
-                        提交检查
+                        提交盘点
                       </Button>
                     </Form.Item>
                   </Form>
                   <Table
                     rowKey="id"
                     size="small"
-                    loading={checksLoading}
+                    loading={recordsLoading}
                     pagination={{ pageSize: 5, hideOnSinglePage: true }}
-                    dataSource={checks}
+                    dataSource={records}
                     columns={[
                       {
-                        title: '检查日',
+                        title: '盘点日',
                         dataIndex: 'check_date',
                         render: (v) => formatDate(v),
                       },
                       {
-                        title: '下次检查',
+                        title: '数量',
+                        dataIndex: 'quantity_checked',
+                        width: 60,
+                        render: (v) => (v != null ? v : '—'),
+                      },
+                      {
+                        title: '下次盘点',
                         dataIndex: 'next_check_date',
                         render: (v) => formatDate(v),
                       },
@@ -260,7 +271,7 @@ export default function App() {
                   />
                 </>
               ) : (
-                <Text type="secondary">请在左侧表格中点击一条物品，填写检查记录。</Text>
+                <Text type="secondary">请在左侧表格中点击一种药品，填写盘点记录。</Text>
               )}
             </Card>
           </Col>
