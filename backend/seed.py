@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 
 from database import Base, SessionLocal, engine
-from models import EmergencyContact, EmergencyDrill, Medicine, StorageLocation
+from models import EmergencyContact, EmergencyDrill, Medicine, PurchasePlan, StorageLocation
 
 TODAY = date.today()
 
@@ -239,9 +239,61 @@ def seed_storage_locations() -> None:
         db.close()
 
 
+def seed_purchase_plans() -> None:
+    """若表为空则插入 5 条待办采购计划。"""
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        if db.query(PurchasePlan).count() > 0:
+            return
+
+        plans = [
+            PurchasePlan(
+                item_name="N95口罩",
+                planned_quantity=50,
+                estimated_unit_price=2.5,
+                planned_purchase_date=TODAY + timedelta(days=3),
+                is_completed=False,
+            ),
+            PurchasePlan(
+                item_name="家用灭火器",
+                planned_quantity=2,
+                estimated_unit_price=89.0,
+                planned_purchase_date=TODAY + timedelta(days=7),
+                is_completed=False,
+            ),
+            PurchasePlan(
+                item_name="应急饮用水（箱）",
+                planned_quantity=5,
+                estimated_unit_price=45.0,
+                planned_purchase_date=TODAY + timedelta(days=5),
+                is_completed=False,
+            ),
+            PurchasePlan(
+                item_name="压缩饼干（箱）",
+                planned_quantity=3,
+                estimated_unit_price=68.0,
+                planned_purchase_date=TODAY + timedelta(days=10),
+                is_completed=False,
+            ),
+            PurchasePlan(
+                item_name="强光手电筒",
+                planned_quantity=4,
+                estimated_unit_price=35.0,
+                planned_purchase_date=TODAY + timedelta(days=2),
+                is_completed=False,
+            ),
+        ]
+        db.add_all(plans)
+        db.commit()
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     seed_medicines()
     seed_emergency_contacts()
     seed_emergency_drills()
     seed_storage_locations()
+    seed_purchase_plans()
     print("Seed completed.")

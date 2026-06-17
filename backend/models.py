@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -96,6 +96,24 @@ class StorageLocation(Base):
     room: Mapped[str] = mapped_column(String(100), nullable=False)
     capacity_desc: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     current_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow
+    )
+
+
+class PurchasePlan(Base):
+    """应急物资采购计划。"""
+
+    __tablename__ = "purchase_plans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    item_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    planned_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    estimated_unit_price: Mapped[float] = mapped_column(
+        Numeric(10, 2), nullable=False, default=0.0
+    )
+    planned_purchase_date: Mapped[date] = mapped_column(Date, nullable=False)
+    is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )

@@ -153,3 +153,31 @@ class StorageLocationResponse(StorageLocationBase):
 
     id: int
     created_at: datetime
+
+
+class PurchasePlanBase(BaseModel):
+    """采购计划公共字段。"""
+
+    item_name: str = Field(..., min_length=1, max_length=200)
+    planned_quantity: int = Field(..., ge=1)
+    estimated_unit_price: float = Field(..., ge=0)
+    planned_purchase_date: date
+    is_completed: bool = False
+
+
+class PurchasePlanCreate(BaseModel):
+    """创建采购计划。"""
+
+    item_name: str = Field(..., min_length=1, max_length=200)
+    planned_quantity: int = Field(..., ge=1)
+    estimated_unit_price: float = Field(..., ge=0)
+    planned_purchase_date: date
+
+
+class PurchasePlanResponse(PurchasePlanBase):
+    """采购计划响应。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime

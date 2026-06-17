@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import EmergencyContact, EmergencyDrill, InventoryRecord, Medicine, StorageLocation
+from models import EmergencyContact, EmergencyDrill, InventoryRecord, Medicine, PurchasePlan, StorageLocation
 from schemas import (
     EmergencyContactCreate,
     EmergencyContactResponse,
@@ -20,11 +20,19 @@ from schemas import (
     MedicineCreate,
     MedicineResponse,
     MedicineUpdate,
+    PurchasePlanCreate,
+    PurchasePlanResponse,
     StorageLocationCreate,
     StorageLocationResponse,
     StorageLocationUpdate,
 )
-from seed import seed_emergency_contacts, seed_emergency_drills, seed_medicines, seed_storage_locations
+from seed import (
+    seed_emergency_contacts,
+    seed_emergency_drills,
+    seed_medicines,
+    seed_purchase_plans,
+    seed_storage_locations,
+)
 
 app = FastAPI(title="家庭药品台账", version="1.0.0")
 
@@ -51,6 +59,7 @@ def on_startup() -> None:
     seed_emergency_contacts()
     seed_emergency_drills()
     seed_storage_locations()
+    seed_purchase_plans()
 
 
 def compute_status_tags(medicine: Medicine) -> list[Literal["expired", "check_due"]]:
@@ -315,3 +324,40 @@ def delete_location(location_id: int, db: Session = Depends(get_db)) -> None:
         raise HTTPException(status_code=404, detail="存放位置不存在")
     db.delete(location)
     db.commit()
+
+
+@app.get("/api/purchase-plans", response_model=list[PurchasePlanResponse])
+def list_purchase_plans(db: Session = Depends(get_db)) -> list[PurchasePlanResponse]:
+    """获取全部采购计划，未完成排最前，按计划采购日期升序。"""
+    plans = (
+        db.query(PurchasePlan)
+        .order_by(PurchasePlan.is_completed.asc(), PurchasePlan.planned_purchase_date.asc())
+        .all()
+    )
+    return plans
+
+
+@app.post("/api/purchase-plans", response_model=PurchasePlanResponse, status_code=201)
+def create_purchase_plan(
+    payload: PurchasePlanCreate, db: Session = Depends(get_db)
+) -> PurchasePlanResponse:
+    """新增采购计划。"""
+    plan = PurchasePlan(**payload.model_dump())
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return plan
+
+
+@app.put("/api/purchase-plans/{plan_id}/complete", response_model=PurchasePlanResponse)
+def mark_purchase_plan_completed(
+    plan_id: int, db: Session = Depends(get_db)
+) -> PurchasePlanResponse:
+    """标记采购计划为已完成。"""
+    plan = db.query(PurchasePlan).filter(PurchasePlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="采购计划不存在")
+    plan.is_completed = True
+    db.commit()
+    db.refresh(plan)
+    return plan

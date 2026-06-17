@@ -176,4 +176,39 @@ export async function deleteLocation(locationId) {
   await api.delete(`/locations/${locationId}`);
 }
 
+/**
+ * @typedef {Object} PurchasePlan
+ * @property {number} id
+ * @property {string} item_name
+ * @property {number} planned_quantity
+ * @property {number} estimated_unit_price
+ * @property {string} planned_purchase_date
+ * @property {boolean} is_completed
+ * @property {string} created_at
+ */
+
+/** @returns {Promise<PurchasePlan[]>} */
+export async function fetchPurchasePlans() {
+  const { data } = await api.get('/purchase-plans');
+  return data;
+}
+
+/**
+ * @param {{ item_name: string, planned_quantity: number, estimated_unit_price: number, planned_purchase_date: string }} payload
+ * @returns {Promise<PurchasePlan>}
+ */
+export async function createPurchasePlan(payload) {
+  const { data } = await api.post('/purchase-plans', payload);
+  return data;
+}
+
+/**
+ * @param {number} planId
+ * @returns {Promise<PurchasePlan>}
+ */
+export async function markPurchasePlanCompleted(planId) {
+  const { data } = await api.put(`/purchase-plans/${planId}/complete`);
+  return data;
+}
+
 export default api;
