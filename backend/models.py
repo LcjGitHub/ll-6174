@@ -84,3 +84,18 @@ class EmergencyDrill(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
+
+
+class StorageLocation(Base):
+    """应急物品存放位置。"""
+
+    __tablename__ = "storage_locations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    room: Mapped[str] = mapped_column(String(100), nullable=False)
+    capacity_desc: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    current_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow
+    )

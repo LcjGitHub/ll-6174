@@ -20,6 +20,7 @@ import dayjs from 'dayjs';
 import { createRecord, fetchMedicines, fetchRecords } from './api';
 import EmergencyContacts from './EmergencyContacts';
 import EmergencyDrills from './EmergencyDrills';
+import StorageLocations from './StorageLocations';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -317,6 +318,11 @@ export default function App() {
       key: 'drills',
       label: '应急演练',
       children: <EmergencyDrills />,
+    },
+    {
+      key: 'locations',
+      label: '存放位置',
+      children: <StorageLocations />,
     },
   ];
 

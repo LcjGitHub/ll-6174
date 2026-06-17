@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import EmergencyContact, EmergencyDrill, InventoryRecord, Medicine
+from models import EmergencyContact, EmergencyDrill, InventoryRecord, Medicine, StorageLocation
 from schemas import (
     EmergencyContactCreate,
     EmergencyContactResponse,
@@ -20,8 +20,11 @@ from schemas import (
     MedicineCreate,
     MedicineResponse,
     MedicineUpdate,
+    StorageLocationCreate,
+    StorageLocationResponse,
+    StorageLocationUpdate,
 )
-from seed import seed_emergency_contacts, seed_emergency_drills, seed_medicines
+from seed import seed_emergency_contacts, seed_emergency_drills, seed_medicines, seed_storage_locations
 
 app = FastAPI(title="家庭药品台账", version="1.0.0")
 
@@ -47,6 +50,7 @@ def on_startup() -> None:
     seed_medicines()
     seed_emergency_contacts()
     seed_emergency_drills()
+    seed_storage_locations()
 
 
 def compute_status_tags(medicine: Medicine) -> list[Literal["expired", "check_due"]]:
@@ -254,3 +258,60 @@ def create_drill(
     db.commit()
     db.refresh(drill)
     return drill
+
+
+@app.get("/api/locations", response_model=list[StorageLocationResponse])
+def list_locations(db: Session = Depends(get_db)) -> list[StorageLocationResponse]:
+    """获取全部应急物品存放位置。"""
+    locations = db.query(StorageLocation).order_by(StorageLocation.id).all()
+    return locations
+
+
+@app.post("/api/locations", response_model=StorageLocationResponse, status_code=201)
+def create_location(
+    payload: StorageLocationCreate, db: Session = Depends(get_db)
+) -> StorageLocationResponse:
+    """新增应急物品存放位置。"""
+    location = StorageLocation(**payload.model_dump())
+    db.add(location)
+    db.commit()
+    db.refresh(location)
+    return location
+
+
+@app.get("/api/locations/{location_id}", response_model=StorageLocationResponse)
+def get_location(
+    location_id: int, db: Session = Depends(get_db)
+) -> StorageLocationResponse:
+    """获取单个存放位置详情。"""
+    location = db.query(StorageLocation).filter(StorageLocation.id == location_id).first()
+    if not location:
+        raise HTTPException(status_code=404, detail="存放位置不存在")
+    return location
+
+
+@app.put("/api/locations/{location_id}", response_model=StorageLocationResponse)
+def update_location(
+    location_id: int,
+    payload: StorageLocationUpdate,
+    db: Session = Depends(get_db),
+) -> StorageLocationResponse:
+    """更新存放位置。"""
+    location = db.query(StorageLocation).filter(StorageLocation.id == location_id).first()
+    if not location:
+        raise HTTPException(status_code=404, detail="存放位置不存在")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(location, key, value)
+    db.commit()
+    db.refresh(location)
+    return location
+
+
+@app.delete("/api/locations/{location_id}", status_code=204)
+def delete_location(location_id: int, db: Session = Depends(get_db)) -> None:
+    """删除存放位置。"""
+    location = db.query(StorageLocation).filter(StorageLocation.id == location_id).first()
+    if not location:
+        raise HTTPException(status_code=404, detail="存放位置不存在")
+    db.delete(location)
+    db.commit()

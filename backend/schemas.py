@@ -122,3 +122,34 @@ class EmergencyDrillResponse(EmergencyDrillBase):
 
     id: int
     created_at: datetime
+
+
+class StorageLocationBase(BaseModel):
+    """应急物品存放位置公共字段。"""
+
+    name: str = Field(..., min_length=1, max_length=100)
+    room: str = Field(..., min_length=1, max_length=100)
+    capacity_desc: str = Field("", max_length=200)
+    current_count: int = Field(0, ge=0)
+
+
+class StorageLocationCreate(StorageLocationBase):
+    """创建存放位置。"""
+
+
+class StorageLocationUpdate(BaseModel):
+    """更新存放位置（部分字段）。"""
+
+    name: str | None = Field(None, min_length=1, max_length=100)
+    room: str | None = Field(None, min_length=1, max_length=100)
+    capacity_desc: str | None = Field(None, max_length=200)
+    current_count: int | None = Field(None, ge=0)
+
+
+class StorageLocationResponse(StorageLocationBase):
+    """存放位置响应。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime

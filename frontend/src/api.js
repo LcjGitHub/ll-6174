@@ -124,4 +124,56 @@ export async function createDrill(payload) {
   return data;
 }
 
+/**
+ * @typedef {Object} StorageLocation
+ * @property {number} id
+ * @property {string} name
+ * @property {string} room
+ * @property {string} capacity_desc
+ * @property {number} current_count
+ * @property {string} created_at
+ */
+
+/** @returns {Promise<StorageLocation[]>} */
+export async function fetchLocations() {
+  const { data } = await api.get('/locations');
+  return data;
+}
+
+/**
+ * @param {number} locationId
+ * @returns {Promise<StorageLocation>}
+ */
+export async function fetchLocation(locationId) {
+  const { data } = await api.get(`/locations/${locationId}`);
+  return data;
+}
+
+/**
+ * @param {{ name: string, room: string, capacity_desc?: string, current_count?: number }} payload
+ * @returns {Promise<StorageLocation>}
+ */
+export async function createLocation(payload) {
+  const { data } = await api.post('/locations', payload);
+  return data;
+}
+
+/**
+ * @param {number} locationId
+ * @param {{ name?: string, room?: string, capacity_desc?: string, current_count?: number }} payload
+ * @returns {Promise<StorageLocation>}
+ */
+export async function updateLocation(locationId, payload) {
+  const { data } = await api.put(`/locations/${locationId}`, payload);
+  return data;
+}
+
+/**
+ * @param {number} locationId
+ * @returns {Promise<void>}
+ */
+export async function deleteLocation(locationId) {
+  await api.delete(`/locations/${locationId}`);
+}
+
 export default api;

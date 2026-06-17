@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 
 from database import Base, SessionLocal, engine
-from models import EmergencyContact, EmergencyDrill, Medicine
+from models import EmergencyContact, EmergencyDrill, Medicine, StorageLocation
 
 TODAY = date.today()
 
@@ -199,8 +199,49 @@ def seed_emergency_drills() -> None:
         db.close()
 
 
+def seed_storage_locations() -> None:
+    """若表为空则插入 4 条示例应急物品存放位置。"""
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        if db.query(StorageLocation).count() > 0:
+            return
+
+        locations = [
+            StorageLocation(
+                name="客厅应急柜",
+                room="客厅",
+                capacity_desc="三层储物柜，可存放手电筒、灭火器、逃生绳等物品",
+                current_count=8,
+            ),
+            StorageLocation(
+                name="主卧床头柜",
+                room="主卧",
+                capacity_desc="抽屉式收纳，可放置小型急救包、口哨等随身物品",
+                current_count=5,
+            ),
+            StorageLocation(
+                name="厨房壁柜",
+                room="厨房",
+                capacity_desc="防火密封柜，存放燃气泄漏报警器、灭火毯等",
+                current_count=6,
+            ),
+            StorageLocation(
+                name="玄关鞋柜",
+                room="玄关",
+                capacity_desc="下层储物格，存放应急逃生鞋套、反光背心、家门备用钥匙",
+                current_count=4,
+            ),
+        ]
+        db.add_all(locations)
+        db.commit()
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     seed_medicines()
     seed_emergency_contacts()
     seed_emergency_drills()
+    seed_storage_locations()
     print("Seed completed.")
