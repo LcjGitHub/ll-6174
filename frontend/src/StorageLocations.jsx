@@ -8,6 +8,7 @@ import {
   InputNumber,
   Row,
   Space,
+  Spin,
   Tag,
   Typography,
   message,
@@ -81,13 +82,18 @@ export default function StorageLocations() {
     setSubmitting(true);
     try {
       if (isCreating) {
-        await createLocation({
+        const created = await createLocation({
           name: values.name,
           room: values.room,
           capacity_desc: values.capacity_desc || '',
           current_count: values.current_count ?? 0,
         });
         message.success('新增存放位置成功');
+        const data = await fetchLocations();
+        setLocations(data);
+        const match = data.find((l) => l.id === created.id) || created;
+        setIsCreating(false);
+        setSelectedLocation(match);
       } else if (selectedLocation) {
         const updated = await updateLocation(selectedLocation.id, {
           name: values.name,
@@ -96,12 +102,9 @@ export default function StorageLocations() {
           current_count: values.current_count ?? 0,
         });
         message.success('保存修改成功');
+        const data = await fetchLocations();
+        setLocations(data);
         setSelectedLocation(updated);
-      }
-      await loadLocations();
-      if (isCreating) {
-        setIsCreating(false);
-        form.resetFields();
       }
     } catch {
       message.error(isCreating ? '新增存放位置失败' : '保存修改失败');
@@ -131,14 +134,17 @@ export default function StorageLocations() {
     <Row gutter={[16, 16]} style={{ height: '100%' }}>
       <Col xs={24} lg={10} style={{ height: '100%' }}>
         <Card
+          size="small"
           bordered={false}
-          style={{ height: '100%' }}
+          style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           styles={{
             body: {
-              height: '100%',
-              padding: 16,
+              padding: '8px 12px 12px',
+              flex: 1,
+              minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
+              overflow: 'hidden',
             },
           }}
           title={
@@ -162,102 +168,105 @@ export default function StorageLocations() {
             </Button>
           }
         >
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflow: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            {locations.map((loc) => (
-              <Card
-                key={loc.id}
-                size="small"
-                hoverable
-                onClick={() => handleSelectLocation(loc)}
-                style={{
-                  cursor: 'pointer',
-                  background:
-                    selectedLocation?.id === loc.id
-                      ? '#e6f4ff'
-                      : undefined,
-                  borderColor:
-                    selectedLocation?.id === loc.id ? '#1677ff' : undefined,
-                }}
-                styles={{ body: { padding: 12 } }}
-              >
-                <div
+          <Spin spinning={loading} tip="加载中...">
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              {locations.map((loc) => (
+                <Card
+                  key={loc.id}
+                  size="small"
+                  hoverable
+                  onClick={() => handleSelectLocation(loc)}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
+                    cursor: 'pointer',
+                    background:
+                      selectedLocation?.id === loc.id
+                        ? '#e6f4ff'
+                        : undefined,
+                    borderColor:
+                      selectedLocation?.id === loc.id ? '#1677ff' : undefined,
                   }}
+                  styles={{ body: { padding: '8px 10px' } }}
                 >
-                  <Space
-                    direction="vertical"
-                    size={4}
-                    style={{ flex: 1, minWidth: 0 }}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
                   >
-                    <Space size={6}>
-                      <EnvironmentOutlined
-                        style={{ color: '#1677ff', fontSize: 14 }}
-                      />
-                      <Text strong style={{ fontSize: 15 }}>
-                        {loc.name}
-                      </Text>
+                    <Space
+                      direction="vertical"
+                      size={2}
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
+                      <Space size={6}>
+                        <EnvironmentOutlined
+                          style={{ color: '#1677ff', fontSize: 14 }}
+                        />
+                        <Text strong style={{ fontSize: 14 }}>
+                          {loc.name}
+                        </Text>
+                      </Space>
+                      <Space size={8} wrap>
+                        <Tag color="blue">{loc.room}</Tag>
+                        <Tag color={loc.current_count > 0 ? 'green' : 'default'}>
+                          已存 {loc.current_count} 件
+                        </Tag>
+                      </Space>
+                      {loc.capacity_desc && (
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 12,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {loc.capacity_desc}
+                        </Text>
+                      )}
                     </Space>
-                    <Space size={8} wrap>
-                      <Tag color="blue">{loc.room}</Tag>
-                      <Tag color={loc.current_count > 0 ? 'green' : 'default'}>
-                        已存 {loc.current_count} 件
-                      </Tag>
-                    </Space>
-                    {loc.capacity_desc && (
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: 12,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
+                    <Popconfirm
+                      title="确认删除该位置？"
+                      description="删除后不可恢复"
+                      okText="删除"
+                      okType="danger"
+                      cancelText="取消"
+                      onConfirm={(e) => {
+                        e?.stopPropagation();
+                        handleDelete(loc.id);
+                      }}
+                      onCancel={(e) => {
+                        e?.stopPropagation();
+                      }}
+                    >
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        size="small"
+                        loading={deletingId === loc.id}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {loc.capacity_desc}
-                      </Text>
-                    )}
-                  </Space>
-                  <Popconfirm
-                    title="确认删除该位置？"
-                    description="删除后不可恢复"
-                    okText="删除"
-                    okType="danger"
-                    cancelText="取消"
-                    onConfirm={(e) => {
-                      e?.stopPropagation();
-                      handleDelete(loc.id);
-                    }}
-                    onCancel={(e) => {
-                      e?.stopPropagation();
-                    }}
-                  >
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      size="small"
-                      loading={deletingId === loc.id}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{ marginTop: -4 }}
-                    />
-                  </Popconfirm>
-                </div>
-              </Card>
-            ))}
-          </div>
+                        删除
+                      </Button>
+                    </Popconfirm>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Spin>
         </Card>
       </Col>
       <Col xs={24} lg={14} style={{ height: '100%' }}>
