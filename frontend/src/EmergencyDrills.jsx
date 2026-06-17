@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -6,8 +6,11 @@ import {
   Form,
   Input,
   InputNumber,
+  Row,
+  Col,
   Space,
   Table,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -24,7 +27,9 @@ export default function EmergencyDrills() {
   const [drills, setDrills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [tableScrollY, setTableScrollY] = useState(300);
   const [form] = Form.useForm();
+  const tableContainerRef = useRef(null);
 
   const loadDrills = useCallback(async () => {
     setLoading(true);
@@ -41,6 +46,24 @@ export default function EmergencyDrills() {
   useEffect(() => {
     loadDrills();
   }, [loadDrills]);
+
+  const updateTableHeight = useCallback(() => {
+    if (tableContainerRef.current) {
+      const containerHeight = tableContainerRef.current.clientHeight;
+      const paginationHeight = 40;
+      setTableScrollY(Math.max(150, containerHeight - paginationHeight));
+    }
+  }, []);
+
+  useEffect(() => {
+    updateTableHeight();
+    window.addEventListener('resize', updateTableHeight);
+    const timer = setTimeout(updateTableHeight, 100);
+    return () => {
+      window.removeEventListener('resize', updateTableHeight);
+      clearTimeout(timer);
+    };
+  }, [updateTableHeight]);
 
   async function handleCreate(values) {
     setSubmitting(true);
@@ -96,16 +119,31 @@ export default function EmergencyDrills() {
       dataIndex: 'summary',
       key: 'summary',
       ellipsis: true,
-      render: (value) => value || '—',
+      render: (value) =>
+        value ? (
+          <Tooltip title={value} placement="topLeft">
+            <span>{value}</span>
+          </Tooltip>
+        ) : (
+          '—'
+        ),
     },
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        minHeight: 0,
+      }}
+    >
       <Card
         size="small"
         bordered={false}
-        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        style={{ flex: 1, minHeight: 220, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         styles={{
           body: {
             padding: '8px 16px 12px',
@@ -113,6 +151,7 @@ export default function EmergencyDrills() {
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
+            overflow: 'hidden',
           },
         }}
         title={
@@ -126,23 +165,25 @@ export default function EmergencyDrills() {
           </Space>
         }
       >
-        <Table
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={drills}
-          pagination={{ pageSize: 8, hideOnSinglePage: true }}
-          size="small"
-          style={{ flex: 1, minHeight: 0 }}
-          scroll={{ x: 800, y: 'calc(100vh - 400px)' }}
-        />
+        <div ref={tableContainerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <Table
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={drills}
+            pagination={{ pageSize: 8, hideOnSinglePage: true }}
+            size="small"
+            style={{ height: '100%' }}
+            scroll={{ x: 800, y: tableScrollY }}
+          />
+        </div>
       </Card>
 
       <Card
         size="small"
         bordered={false}
         style={{ flexShrink: 0 }}
-        styles={{ body: { padding: '12px 16px' } }}
+        styles={{ body: { padding: '10px 16px 6px' } }}
         title={
           <Space size={8}>
             <Text strong style={{ fontSize: 15 }}>
@@ -153,50 +194,72 @@ export default function EmergencyDrills() {
       >
         <Form
           form={form}
-          layout="horizontal"
+          layout="vertical"
           onFinish={handleCreate}
           initialValues={{ drill_date: dayjs(), participant_count: 1 }}
         >
-          <Space wrap size={[12, 8]} style={{ width: '100%' }} align="center">
-            <Form.Item
-              name="title"
-              rules={[{ required: true, message: '请输入演练主题' }]}
-              style={{ marginBottom: 0, minWidth: 200 }}
-            >
-              <Input placeholder="演练主题" size="small" maxLength={200} />
-            </Form.Item>
-            <Form.Item
-              name="drill_date"
-              rules={[{ required: true, message: '请选择演练日期' }]}
-              style={{ marginBottom: 0, minWidth: 150 }}
-            >
-              <DatePicker style={{ width: '100%' }} size="small" />
-            </Form.Item>
-            <Form.Item
-              name="participant_count"
-              rules={[{ required: true, message: '请输入参与人数' }]}
-              style={{ marginBottom: 0, minWidth: 120 }}
-            >
-              <InputNumber min={0} style={{ width: '100%' }} size="small" placeholder="参与人数" />
-            </Form.Item>
-            <Form.Item
-              name="location"
-              style={{ marginBottom: 0, minWidth: 150 }}
-            >
-              <Input placeholder="演练地点" size="small" maxLength={100} />
-            </Form.Item>
-            <Form.Item
-              name="summary"
-              style={{ marginBottom: 0, minWidth: 200 }}
-            >
-              <Input placeholder="总结备注（可选）" size="small" maxLength={500} />
-            </Form.Item>
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Button type="primary" size="small" htmlType="submit" loading={submitting}>
-                添加
-              </Button>
-            </Form.Item>
-          </Space>
+          <Row gutter={12}>
+            <Col xs={24} sm={12} md={6}>
+              <Form.Item
+                label="演练主题"
+                name="title"
+                rules={[{ required: true, message: '请输入演练主题' }]}
+                style={{ marginBottom: 6 }}
+              >
+                <Input placeholder="请输入演练主题" maxLength={200} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={4}>
+              <Form.Item
+                label="演练日期"
+                name="drill_date"
+                rules={[{ required: true, message: '请选择演练日期' }]}
+                style={{ marginBottom: 6 }}
+              >
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={3}>
+              <Form.Item
+                label="参与人数"
+                name="participant_count"
+                rules={[{ required: true, message: '请输入参与人数' }]}
+                style={{ marginBottom: 6 }}
+              >
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="参与人数" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Form.Item
+                label="演练地点"
+                name="location"
+                style={{ marginBottom: 6 }}
+              >
+                <Input placeholder="请输入演练地点" maxLength={100} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={6}>
+              <Form.Item
+                label="总结备注"
+                name="summary"
+                style={{ marginBottom: 6 }}
+              >
+                <Input.TextArea
+                  rows={2}
+                  placeholder="请输入总结备注（可选）"
+                  maxLength={500}
+                  showCount
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={2}>
+              <Form.Item label=" " colon={false} style={{ marginBottom: 6 }}>
+                <Button type="primary" htmlType="submit" loading={submitting} block>
+                  添加
+                </Button>
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Card>
     </div>
