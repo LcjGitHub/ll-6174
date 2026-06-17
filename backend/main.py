@@ -8,18 +8,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import EmergencyContact, InventoryRecord, Medicine
+from models import EmergencyContact, EmergencyDrill, InventoryRecord, Medicine
 from schemas import (
     EmergencyContactCreate,
     EmergencyContactResponse,
     EmergencyContactUpdate,
+    EmergencyDrillCreate,
+    EmergencyDrillResponse,
     InventoryRecordCreate,
     InventoryRecordResponse,
     MedicineCreate,
     MedicineResponse,
     MedicineUpdate,
 )
-from seed import seed_emergency_contacts, seed_medicines
+from seed import seed_emergency_contacts, seed_emergency_drills, seed_medicines
 
 app = FastAPI(title="家庭药品台账", version="1.0.0")
 
@@ -44,6 +46,7 @@ def on_startup() -> None:
     """启动时建表并 seed。"""
     seed_medicines()
     seed_emergency_contacts()
+    seed_emergency_drills()
 
 
 def compute_status_tags(medicine: Medicine) -> list[Literal["expired", "check_due"]]:
@@ -232,3 +235,22 @@ def delete_contact(contact_id: int, db: Session = Depends(get_db)) -> None:
         raise HTTPException(status_code=404, detail="紧急联系人不存在")
     db.delete(contact)
     db.commit()
+
+
+@app.get("/api/drills", response_model=list[EmergencyDrillResponse])
+def list_drills(db: Session = Depends(get_db)) -> list[EmergencyDrillResponse]:
+    """获取全部应急演练记录，按日期倒序排列。"""
+    drills = db.query(EmergencyDrill).order_by(EmergencyDrill.drill_date.desc()).all()
+    return drills
+
+
+@app.post("/api/drills", response_model=EmergencyDrillResponse, status_code=201)
+def create_drill(
+    payload: EmergencyDrillCreate, db: Session = Depends(get_db)
+) -> EmergencyDrillResponse:
+    """新增应急演练记录。"""
+    drill = EmergencyDrill(**payload.model_dump())
+    db.add(drill)
+    db.commit()
+    db.refresh(drill)
+    return drill

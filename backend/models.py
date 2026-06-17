@@ -68,3 +68,19 @@ class EmergencyContact(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
+
+
+class EmergencyDrill(Base):
+    """应急演练记录。"""
+
+    __tablename__ = "emergency_drills"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    drill_date: Mapped[date] = mapped_column(Date, nullable=False)
+    participant_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    location: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow
+    )

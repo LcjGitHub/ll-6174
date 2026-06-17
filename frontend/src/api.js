@@ -98,4 +98,30 @@ export async function deleteContact(contactId) {
   await api.delete(`/contacts/${contactId}`);
 }
 
+/**
+ * @typedef {Object} EmergencyDrill
+ * @property {number} id
+ * @property {string} title
+ * @property {string} drill_date
+ * @property {number} participant_count
+ * @property {string} location
+ * @property {string|null} summary
+ * @property {string} created_at
+ */
+
+/** @returns {Promise<EmergencyDrill[]>} */
+export async function fetchDrills() {
+  const { data } = await api.get('/drills');
+  return data;
+}
+
+/**
+ * @param {{ title: string, drill_date: string, participant_count: number, location: string, summary?: string }} payload
+ * @returns {Promise<EmergencyDrill>}
+ */
+export async function createDrill(payload) {
+  const { data } = await api.post('/drills', payload);
+  return data;
+}
+
 export default api;

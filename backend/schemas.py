@@ -99,3 +99,26 @@ class EmergencyContactResponse(EmergencyContactBase):
 
     id: int
     created_at: datetime
+
+
+class EmergencyDrillBase(BaseModel):
+    """应急演练记录公共字段。"""
+
+    title: str = Field(..., min_length=1, max_length=200)
+    drill_date: date
+    participant_count: int = Field(..., ge=0)
+    location: str = Field("", max_length=100)
+    summary: str | None = Field(None, max_length=500)
+
+
+class EmergencyDrillCreate(EmergencyDrillBase):
+    """创建应急演练记录。"""
+
+
+class EmergencyDrillResponse(EmergencyDrillBase):
+    """应急演练记录响应。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime

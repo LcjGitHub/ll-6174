@@ -19,6 +19,7 @@ import {
 import dayjs from 'dayjs';
 import { createRecord, fetchMedicines, fetchRecords } from './api';
 import EmergencyContacts from './EmergencyContacts';
+import EmergencyDrills from './EmergencyDrills';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -311,6 +312,11 @@ export default function App() {
       key: 'contacts',
       label: '紧急联系人',
       children: <EmergencyContacts />,
+    },
+    {
+      key: 'drills',
+      label: '应急演练',
+      children: <EmergencyDrills />,
     },
   ];
 

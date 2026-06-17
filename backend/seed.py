@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 
 from database import Base, SessionLocal, engine
-from models import EmergencyContact, Medicine
+from models import EmergencyContact, EmergencyDrill, Medicine
 
 TODAY = date.today()
 
@@ -155,7 +155,52 @@ def seed_emergency_contacts() -> None:
         db.close()
 
 
+def seed_emergency_drills() -> None:
+    """若表为空则插入 4 条示例应急演练记录。"""
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        if db.query(EmergencyDrill).count() > 0:
+            return
+
+        drills = [
+            EmergencyDrill(
+                title="家庭火灾逃生演练",
+                drill_date=TODAY - timedelta(days=90),
+                participant_count=4,
+                location="家中",
+                summary="全体成员按照逃生路线成功撤离到指定安全区域，总耗时2分30秒。需优化老人撤离速度。",
+            ),
+            EmergencyDrill(
+                title="地震避险演练",
+                drill_date=TODAY - timedelta(days=60),
+                participant_count=3,
+                location="家中",
+                summary="演练了地震发生时的伏地、遮挡、手抓牢三个步骤，成员对避险位置选择存在分歧，已统一标准。",
+            ),
+            EmergencyDrill(
+                title="心肺复苏急救演练",
+                drill_date=TODAY - timedelta(days=30),
+                participant_count=5,
+                location="社区活动室",
+                summary="邀请社区医生指导，全体成员完成胸外按压和人工呼吸实操训练，考核通过率80%。",
+            ),
+            EmergencyDrill(
+                title="燃气泄漏应急处置演练",
+                drill_date=TODAY - timedelta(days=7),
+                participant_count=4,
+                location="家中厨房",
+                summary="演练了关闭阀门、开窗通风、禁止明火、撤离报警等流程，操作规范，总耗时1分45秒。",
+            ),
+        ]
+        db.add_all(drills)
+        db.commit()
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     seed_medicines()
     seed_emergency_contacts()
+    seed_emergency_drills()
     print("Seed completed.")
