@@ -1,9 +1,9 @@
-"""初始化数据库并写入 8 条示例药品数据。"""
+"""初始化数据库并写入示例数据。"""
 
 from datetime import date, timedelta
 
 from database import Base, SessionLocal, engine
-from models import Medicine
+from models import EmergencyContact, Medicine
 
 TODAY = date.today()
 
@@ -88,6 +88,58 @@ def seed_medicines() -> None:
         db.close()
 
 
+def seed_emergency_contacts() -> None:
+    """若表为空则插入 5 条示例紧急联系人。"""
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        if db.query(EmergencyContact).count() > 0:
+            return
+
+        contacts = [
+            EmergencyContact(
+                name="张伟",
+                relationship="配偶",
+                phone="13800138001",
+                is_primary=True,
+                note="24小时可联系",
+            ),
+            EmergencyContact(
+                name="李芳",
+                relationship="母亲",
+                phone="13900139002",
+                is_primary=False,
+                note="家附近居住",
+            ),
+            EmergencyContact(
+                name="王强",
+                relationship="同事",
+                phone="13700137003",
+                is_primary=False,
+                note="单位紧急联络人",
+            ),
+            EmergencyContact(
+                name="赵敏",
+                relationship="闺蜜",
+                phone="13600136004",
+                is_primary=True,
+                note="有备用钥匙",
+            ),
+            EmergencyContact(
+                name="刘强",
+                relationship="邻居",
+                phone="13500135005",
+                is_primary=False,
+                note="住对门",
+            ),
+        ]
+        db.add_all(contacts)
+        db.commit()
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     seed_medicines()
-    print("Seed completed: 8 medicines inserted.")
+    seed_emergency_contacts()
+    print("Seed completed.")

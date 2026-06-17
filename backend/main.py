@@ -8,15 +8,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import InventoryRecord, Medicine
+from models import EmergencyContact, InventoryRecord, Medicine
 from schemas import (
+    EmergencyContactCreate,
+    EmergencyContactResponse,
+    EmergencyContactUpdate,
     InventoryRecordCreate,
     InventoryRecordResponse,
     MedicineCreate,
     MedicineResponse,
     MedicineUpdate,
 )
-from seed import seed_medicines
+from seed import seed_emergency_contacts, seed_medicines
 
 app = FastAPI(title="家庭药品台账", version="1.0.0")
 
@@ -40,6 +43,7 @@ app.add_middleware(
 def on_startup() -> None:
     """启动时建表并 seed。"""
     seed_medicines()
+    seed_emergency_contacts()
 
 
 def compute_status_tags(medicine: Medicine) -> list[Literal["expired", "check_due"]]:
@@ -164,3 +168,67 @@ def create_record(
 def health() -> dict[str, str]:
     """健康检查。"""
     return {"status": "ok"}
+
+
+def enforce_single_primary(db: Session, contact_id: int | None = None) -> None:
+    """确保只有一个首要联系人。"""
+    primary_contacts = db.query(EmergencyContact).filter(
+        EmergencyContact.is_primary == True
+    ).all()
+    if len(primary_contacts) > 1:
+        for contact in primary_contacts:
+            if contact.id != contact_id:
+                contact.is_primary = False
+        db.commit()
+
+
+@app.get("/api/contacts", response_model=list[EmergencyContactResponse])
+def list_contacts(db: Session = Depends(get_db)) -> list[EmergencyContactResponse]:
+    """获取全部紧急联系人，首要联系人排最前。"""
+    contacts = db.query(EmergencyContact).order_by(
+        EmergencyContact.is_primary.desc(), EmergencyContact.id
+    ).all()
+    return contacts
+
+
+@app.post("/api/contacts", response_model=EmergencyContactResponse, status_code=201)
+def create_contact(
+    payload: EmergencyContactCreate, db: Session = Depends(get_db)
+) -> EmergencyContactResponse:
+    """新增紧急联系人。"""
+    contact = EmergencyContact(**payload.model_dump())
+    db.add(contact)
+    db.commit()
+    db.refresh(contact)
+    if contact.is_primary:
+        enforce_single_primary(db, contact.id)
+        db.refresh(contact)
+    return contact
+
+
+@app.put("/api/contacts/{contact_id}", response_model=EmergencyContactResponse)
+def update_contact(
+    contact_id: int, payload: EmergencyContactUpdate, db: Session = Depends(get_db)
+) -> EmergencyContactResponse:
+    """更新紧急联系人。"""
+    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="紧急联系人不存在")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(contact, key, value)
+    db.commit()
+    db.refresh(contact)
+    if contact.is_primary:
+        enforce_single_primary(db, contact.id)
+        db.refresh(contact)
+    return contact
+
+
+@app.delete("/api/contacts/{contact_id}", status_code=204)
+def delete_contact(contact_id: int, db: Session = Depends(get_db)) -> None:
+    """删除紧急联系人。"""
+    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="紧急联系人不存在")
+    db.delete(contact)
+    db.commit()

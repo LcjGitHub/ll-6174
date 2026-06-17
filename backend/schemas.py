@@ -63,3 +63,36 @@ class InventoryRecordResponse(BaseModel):
     note: str | None
     next_check_date: date | None
     created_at: datetime
+
+
+class EmergencyContactBase(BaseModel):
+    """紧急联系人公共字段。"""
+
+    name: str = Field(..., min_length=1, max_length=50)
+    relationship: str = Field(..., min_length=1, max_length=50)
+    phone: str = Field(..., min_length=1, max_length=20)
+    is_primary: bool = False
+    note: str | None = Field(None, max_length=200)
+
+
+class EmergencyContactCreate(EmergencyContactBase):
+    """创建紧急联系人。"""
+
+
+class EmergencyContactUpdate(BaseModel):
+    """更新紧急联系人（部分字段）。"""
+
+    name: str | None = Field(None, min_length=1, max_length=50)
+    relationship: str | None = Field(None, min_length=1, max_length=50)
+    phone: str | None = Field(None, min_length=1, max_length=20)
+    is_primary: bool | None = None
+    note: str | None = Field(None, max_length=200)
+
+
+class EmergencyContactResponse(EmergencyContactBase):
+    """紧急联系人响应。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime

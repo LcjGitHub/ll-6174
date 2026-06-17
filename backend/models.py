@@ -52,3 +52,19 @@ class InventoryRecord(Base):
     medicine: Mapped["Medicine"] = relationship(
         "Medicine", back_populates="check_records"
     )
+
+
+class EmergencyContact(Base):
+    """紧急联系人。"""
+
+    __tablename__ = "emergency_contacts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    relationship: Mapped[str] = mapped_column(String(50), nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    is_primary: Mapped[bool] = mapped_column(default=False, nullable=False)
+    note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow
+    )

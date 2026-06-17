@@ -54,4 +54,48 @@ export async function createRecord(medicineId, payload) {
   return data;
 }
 
+/**
+ * @typedef {Object} EmergencyContact
+ * @property {number} id
+ * @property {string} name
+ * @property {string} relationship
+ * @property {string} phone
+ * @property {boolean} is_primary
+ * @property {string|null} note
+ * @property {string} created_at
+ */
+
+/** @returns {Promise<EmergencyContact[]>} */
+export async function fetchContacts() {
+  const { data } = await api.get('/contacts');
+  return data;
+}
+
+/**
+ * @param {{ name: string, relationship: string, phone: string, is_primary?: boolean, note?: string }} payload
+ * @returns {Promise<EmergencyContact>}
+ */
+export async function createContact(payload) {
+  const { data } = await api.post('/contacts', payload);
+  return data;
+}
+
+/**
+ * @param {number} contactId
+ * @param {{ name?: string, relationship?: string, phone?: string, is_primary?: boolean, note?: string }} payload
+ * @returns {Promise<EmergencyContact>}
+ */
+export async function updateContact(contactId, payload) {
+  const { data } = await api.put(`/contacts/${contactId}`, payload);
+  return data;
+}
+
+/**
+ * @param {number} contactId
+ * @returns {Promise<void>}
+ */
+export async function deleteContact(contactId) {
+  await api.delete(`/contacts/${contactId}`);
+}
+
 export default api;
