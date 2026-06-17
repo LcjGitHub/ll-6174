@@ -65,12 +65,15 @@ class InventoryRecordResponse(BaseModel):
     created_at: datetime
 
 
+PHONE_PATTERN = r"^1[3-9]\d{9}$"
+
+
 class EmergencyContactBase(BaseModel):
     """紧急联系人公共字段。"""
 
     name: str = Field(..., min_length=1, max_length=50)
     relationship: str = Field(..., min_length=1, max_length=50)
-    phone: str = Field(..., min_length=1, max_length=20)
+    phone: str = Field(..., pattern=PHONE_PATTERN)
     is_primary: bool = False
     note: str | None = Field(None, max_length=200)
 
@@ -84,7 +87,7 @@ class EmergencyContactUpdate(BaseModel):
 
     name: str | None = Field(None, min_length=1, max_length=50)
     relationship: str | None = Field(None, min_length=1, max_length=50)
-    phone: str | None = Field(None, min_length=1, max_length=20)
+    phone: str | None = Field(None, pattern=PHONE_PATTERN)
     is_primary: bool | None = None
     note: str | None = Field(None, max_length=200)
 

@@ -88,12 +88,27 @@ def seed_medicines() -> None:
         db.close()
 
 
+def _enforce_single_primary(db) -> None:
+    """确保只有一个首要联系人。"""
+    primary_contacts = (
+        db.query(EmergencyContact)
+        .filter(EmergencyContact.is_primary == True)
+        .order_by(EmergencyContact.id)
+        .all()
+    )
+    if len(primary_contacts) > 1:
+        for contact in primary_contacts[1:]:
+            contact.is_primary = False
+        db.commit()
+
+
 def seed_emergency_contacts() -> None:
-    """若表为空则插入 5 条示例紧急联系人。"""
+    """若表为空则插入 5 条示例紧急联系人，并确保仅一人为首要联系人。"""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         if db.query(EmergencyContact).count() > 0:
+            _enforce_single_primary(db)
             return
 
         contacts = [
@@ -122,7 +137,7 @@ def seed_emergency_contacts() -> None:
                 name="赵敏",
                 relationship="闺蜜",
                 phone="13600136004",
-                is_primary=True,
+                is_primary=False,
                 note="有备用钥匙",
             ),
             EmergencyContact(
@@ -135,6 +150,7 @@ def seed_emergency_contacts() -> None:
         ]
         db.add_all(contacts)
         db.commit()
+        _enforce_single_primary(db)
     finally:
         db.close()
 

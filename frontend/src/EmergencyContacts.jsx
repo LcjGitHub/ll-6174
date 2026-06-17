@@ -18,6 +18,12 @@ import { createContact, deleteContact, fetchContacts, updateContact } from './ap
 
 const { Title, Text } = Typography;
 
+const PHONE_REGEX = /^1[3-9]\d{9}$/;
+const PHONE_VALIDATOR = {
+  pattern: PHONE_REGEX,
+  message: '请输入有效的大陆手机号码（11位，1开头）',
+};
+
 function renderNameWithPrimary(name, isPrimary) {
   return (
     <Space size={4}>
@@ -206,18 +212,19 @@ export default function EmergencyContacts() {
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <Card
+        size="small"
+        bordered={false}
+        style={{ flexShrink: 0 }}
+        styles={{ body: { padding: '12px 16px' } }}
         title={
           <Space size={8}>
-            <Title level={4} style={{ margin: 0 }}>
+            <Text strong style={{ fontSize: 15 }}>
               新增联系人
-            </Title>
+            </Text>
           </Space>
         }
-        bordered={false}
-        style={{ marginBottom: 16, flexShrink: 0 }}
-        styles={{ body: { padding: 16 } }}
       >
         <Form
           form={form}
@@ -225,33 +232,36 @@ export default function EmergencyContacts() {
           onFinish={handleCreate}
           initialValues={{ is_primary: false }}
         >
-          <Space wrap size={12} style={{ width: '100%' }}>
+          <Space wrap size={[12, 8]} style={{ width: '100%' }} align="center">
             <Form.Item
               name="name"
               rules={[{ required: true, message: '请输入姓名' }]}
-              style={{ marginBottom: 0, minWidth: 180 }}
+              style={{ marginBottom: 0, minWidth: 150 }}
             >
-              <Input placeholder="姓名" maxLength={50} />
+              <Input placeholder="姓名" size="small" maxLength={50} />
             </Form.Item>
             <Form.Item
               name="relationship"
               rules={[{ required: true, message: '请输入与本人关系' }]}
-              style={{ marginBottom: 0, minWidth: 180 }}
+              style={{ marginBottom: 0, minWidth: 150 }}
             >
-              <Input placeholder="与本人关系" maxLength={50} />
+              <Input placeholder="关系" size="small" maxLength={50} />
             </Form.Item>
             <Form.Item
               name="phone"
-              rules={[{ required: true, message: '请输入手机号码' }]}
-              style={{ marginBottom: 0, minWidth: 180 }}
+              rules={[
+                { required: true, message: '请输入手机号码' },
+                PHONE_VALIDATOR,
+              ]}
+              style={{ marginBottom: 0, minWidth: 170 }}
             >
-              <Input placeholder="手机号码" maxLength={20} />
+              <Input placeholder="11位手机号" size="small" maxLength={11} />
             </Form.Item>
             <Form.Item
               name="note"
-              style={{ marginBottom: 0, minWidth: 200 }}
+              style={{ marginBottom: 0, minWidth: 180 }}
             >
-              <Input placeholder="备注（可选）" maxLength={200} />
+              <Input placeholder="备注（可选）" size="small" maxLength={200} />
             </Form.Item>
             <Form.Item
               name="is_primary"
@@ -259,17 +269,17 @@ export default function EmergencyContacts() {
               style={{ marginBottom: 0 }}
             >
               <Checkbox>
-                <Text type="warning">
+                <Text type="warning" style={{ fontSize: 13 }}>
                   <Space size={4}>
                     <StarFilled />
-                    设为首要联系人
+                    首要联系人
                   </Space>
                 </Text>
               </Checkbox>
             </Form.Item>
             <Form.Item style={{ marginBottom: 0 }}>
-              <Button type="primary" htmlType="submit" loading={submitting}>
-                添加联系人
+              <Button type="primary" size="small" htmlType="submit" loading={submitting}>
+                添加
               </Button>
             </Form.Item>
           </Space>
@@ -277,26 +287,38 @@ export default function EmergencyContacts() {
       </Card>
 
       <Card
-        title={
-          <Space size={8}>
-            <Title level={4} style={{ margin: 0 }}>
-              联系人列表
-            </Title>
-            <Text type="secondary">共 {contacts.length} 位联系人</Text>
-          </Space>
-        }
+        size="small"
         bordered={false}
         style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
-        styles={{ body: { padding: 16, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } }}
+        styles={{
+          body: {
+            padding: '8px 16px 12px',
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        }}
+        title={
+          <Space size={8}>
+            <Text strong style={{ fontSize: 15 }}>
+              联系人列表
+            </Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              共 {contacts.length} 位
+            </Text>
+          </Space>
+        }
       >
         <Table
           rowKey="id"
           loading={loading}
           columns={columns}
           dataSource={contacts}
-          pagination={{ pageSize: 10, hideOnSinglePage: true }}
-          size="middle"
-          scroll={{ x: 900, y: 'calc(100vh - 320px)' }}
+          pagination={{ pageSize: 8, hideOnSinglePage: true }}
+          size="small"
+          style={{ flex: 1, minHeight: 0 }}
+          scroll={{ x: 800, y: 'calc(100vh - 300px)' }}
           rowClassName={(record) =>
             record.is_primary ? 'primary-contact-row' : ''
           }
@@ -337,9 +359,12 @@ export default function EmergencyContacts() {
           <Form.Item
             label="手机号码"
             name="phone"
-            rules={[{ required: true, message: '请输入手机号码' }]}
+            rules={[
+              { required: true, message: '请输入手机号码' },
+              PHONE_VALIDATOR,
+            ]}
           >
-            <Input maxLength={20} />
+            <Input maxLength={11} placeholder="11位手机号码" />
           </Form.Item>
           <Form.Item
             label="备注"
