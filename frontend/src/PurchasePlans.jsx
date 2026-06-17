@@ -36,7 +36,7 @@ export default function PurchasePlans() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [markingId, setMarkingId] = useState(null);
-  const [tableScrollY, setTableScrollY] = useState(300);
+  const [tableScrollY, setTableScrollY] = useState(400);
   const [form] = Form.useForm();
   const tableContainerRef = useRef(null);
 
@@ -60,7 +60,7 @@ export default function PurchasePlans() {
     if (tableContainerRef.current) {
       const containerHeight = tableContainerRef.current.clientHeight;
       const paginationHeight = 40;
-      setTableScrollY(Math.max(150, containerHeight - paginationHeight));
+      setTableScrollY(Math.max(330, containerHeight - paginationHeight));
     }
   }, []);
 
@@ -126,7 +126,10 @@ export default function PurchasePlans() {
       dataIndex: 'planned_quantity',
       key: 'planned_quantity',
       width: 100,
-      render: (value) => `${value} 件`,
+      render: (value, record) => {
+        const unit = record.item_name?.includes('箱') ? '箱' : '件';
+        return `${value} ${unit}`;
+      },
     },
     {
       title: '预估单价',
@@ -212,7 +215,7 @@ export default function PurchasePlans() {
           initialValues={{
             planned_purchase_date: dayjs().add(3, 'day'),
             planned_quantity: 1,
-            estimated_unit_price: 0,
+            estimated_unit_price: 1,
           }}
         >
           <Row gutter={12}>
@@ -240,11 +243,14 @@ export default function PurchasePlans() {
               <Form.Item
                 label="预估单价(元)"
                 name="estimated_unit_price"
-                rules={[{ required: true, message: '请输入预估单价' }]}
+                rules={[
+                  { required: true, message: '请输入预估单价' },
+                  { type: 'number', exclusiveMin: true, min: 0, message: '预估单价必须大于零' },
+                ]}
                 style={{ marginBottom: 6 }}
               >
                 <InputNumber
-                  min={0}
+                  min={0.01}
                   step={0.1}
                   precision={2}
                   style={{ width: '100%' }}
@@ -278,7 +284,7 @@ export default function PurchasePlans() {
         bordered={false}
         style={{
           flex: 1,
-          minHeight: 220,
+          minHeight: 480,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
