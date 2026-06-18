@@ -257,3 +257,182 @@ def test_create_and_list_records():
     records = list_response.json()
     assert len(records) >= 1
     assert records[0]["note"] == "测试盘点"
+
+
+def test_status_tags_expired_medicine():
+    from routers.medicines import compute_status_tags
+    from datetime import timedelta
+
+    medicine = models.Medicine(
+        name="过期药品",
+        specification="测试",
+        quantity=1,
+        category="医疗",
+        expiry_date=date.today() - timedelta(days=10),
+        next_check_date=date.today() + timedelta(days=30),
+    )
+    tags = compute_status_tags(medicine)
+    assert "expired" in tags
+    assert "check_due" not in tags
+
+
+def test_status_tags_check_due_medicine():
+    from routers.medicines import compute_status_tags
+    from datetime import timedelta
+
+    medicine = models.Medicine(
+        name="待检查药品",
+        specification="测试",
+        quantity=1,
+        category="医疗",
+        expiry_date=date.today() + timedelta(days=365),
+        next_check_date=date.today(),
+    )
+    tags = compute_status_tags(medicine)
+    assert "expired" not in tags
+    assert "check_due" in tags
+
+
+def test_status_tags_both_expired_and_check_due():
+    from routers.medicines import compute_status_tags
+    from datetime import timedelta
+
+    medicine = models.Medicine(
+        name="过期且待检查药品",
+        specification="测试",
+        quantity=1,
+        category="医疗",
+        expiry_date=date.today() - timedelta(days=5),
+        next_check_date=date.today() - timedelta(days=1),
+    )
+    tags = compute_status_tags(medicine)
+    assert "expired" in tags
+    assert "check_due" in tags
+
+
+def test_status_tags_normal_medicine():
+    from routers.medicines import compute_status_tags
+    from datetime import timedelta
+
+    medicine = models.Medicine(
+        name="正常药品",
+        specification="测试",
+        quantity=1,
+        category="医疗",
+        expiry_date=date.today() + timedelta(days=365),
+        next_check_date=date.today() + timedelta(days=30),
+    )
+    tags = compute_status_tags(medicine)
+    assert tags == []
+
+
+def test_status_tags_no_dates():
+    from routers.medicines import compute_status_tags
+
+    medicine = models.Medicine(
+        name="无日期药品",
+        specification="测试",
+        quantity=1,
+        category="工具",
+        expiry_date=None,
+        next_check_date=None,
+    )
+    tags = compute_status_tags(medicine)
+    assert tags == []
+
+
+def test_list_medicines_contains_status_tags():
+    response = client.get("/api/medicines")
+    assert response.status_code == 200
+    data = response.json()
+    for item in data:
+        assert "status_tags" in item
+        assert isinstance(item["status_tags"], list)
+
+
+def test_create_record_updates_medicine_check_dates():
+    from datetime import timedelta
+
+    create_resp = client.post(
+        "/api/medicines",
+        json={
+            "name": "盘点测试药品",
+            "specification": "10mg*10片",
+            "quantity": 5,
+            "category": "医疗",
+            "expiry_date": (date.today() + timedelta(days=365)).isoformat(),
+        },
+    )
+    assert create_resp.status_code == 201
+    medicine_id = create_resp.json()["id"]
+
+    check_date = date.today() - timedelta(days=1)
+    next_check_date = date.today() + timedelta(days=60)
+
+    record_resp = client.post(
+        f"/api/medicines/{medicine_id}/records",
+        json={
+            "check_date": check_date.isoformat(),
+            "quantity_checked": 8,
+            "note": "定期盘点",
+            "next_check_date": next_check_date.isoformat(),
+        },
+    )
+    assert record_resp.status_code == 201
+
+    medicine_resp = client.get("/api/medicines")
+    assert medicine_resp.status_code == 200
+    medicines = medicine_resp.json()
+    target = next(m for m in medicines if m["id"] == medicine_id)
+
+    assert target["last_check_date"] == check_date.isoformat()
+    assert target["next_check_date"] == next_check_date.isoformat()
+    assert target["quantity"] == 8
+
+
+def test_create_record_without_next_check_date_preserves_existing():
+    from datetime import timedelta
+
+    existing_next = date.today() + timedelta(days=90)
+    create_resp = client.post(
+        "/api/medicines",
+        json={
+            "name": "保留下次检查日药品",
+            "specification": "5g",
+            "quantity": 3,
+            "category": "食品",
+            "expiry_date": (date.today() + timedelta(days=180)).isoformat(),
+            "next_check_date": existing_next.isoformat(),
+        },
+    )
+    assert create_resp.status_code == 201
+    medicine_id = create_resp.json()["id"]
+
+    check_date = date.today()
+    record_resp = client.post(
+        f"/api/medicines/{medicine_id}/records",
+        json={
+            "check_date": check_date.isoformat(),
+            "quantity_checked": 3,
+            "note": "仅更新上次检查日",
+        },
+    )
+    assert record_resp.status_code == 201
+
+    medicine_resp = client.get("/api/medicines")
+    medicines = medicine_resp.json()
+    target = next(m for m in medicines if m["id"] == medicine_id)
+
+    assert target["last_check_date"] == check_date.isoformat()
+    assert target["next_check_date"] == existing_next.isoformat()
+
+
+def test_create_record_for_nonexistent_medicine():
+    response = client.post(
+        "/api/medicines/99999/records",
+        json={
+            "check_date": date.today().isoformat(),
+            "quantity_checked": 1,
+        },
+    )
+    assert response.status_code == 404
