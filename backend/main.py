@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from database import get_db
+from database import get_db, migrate_medicines_category_column
 from models import EmergencyContact, EmergencyDrill, InventoryRecord, Medicine, PurchasePlan, StorageLocation
 from schemas import (
     EmergencyContactCreate,
@@ -55,7 +55,8 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup() -> None:
-    """启动时建表并 seed。"""
+    """启动时迁移、建表并 seed。"""
+    migrate_medicines_category_column()
     seed_medicines()
     seed_emergency_contacts()
     seed_emergency_drills()
@@ -81,6 +82,7 @@ def to_medicine_response(medicine: Medicine) -> MedicineResponse:
         name=medicine.name,
         specification=medicine.specification,
         quantity=medicine.quantity,
+        category=medicine.category,
         expiry_date=medicine.expiry_date,
         last_check_date=medicine.last_check_date,
         next_check_date=medicine.next_check_date,
@@ -90,9 +92,15 @@ def to_medicine_response(medicine: Medicine) -> MedicineResponse:
 
 
 @app.get("/api/medicines", response_model=list[MedicineResponse])
-def list_medicines(db: Session = Depends(get_db)) -> list[MedicineResponse]:
-    """获取全部药品。"""
-    medicines = db.query(Medicine).order_by(Medicine.id).all()
+def list_medicines(
+    category: str | None = None,
+    db: Session = Depends(get_db),
+) -> list[MedicineResponse]:
+    """获取全部药品，支持按分类筛选。"""
+    query = db.query(Medicine)
+    if category:
+        query = query.filter(Medicine.category == category)
+    medicines = query.order_by(Medicine.id).all()
     return [to_medicine_response(m) for m in medicines]
 
 

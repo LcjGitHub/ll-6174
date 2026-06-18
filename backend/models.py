@@ -8,6 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 
+CATEGORY_CHOICES = ("食品", "医疗", "工具", "其他")
+
+
 class Medicine(Base):
     """药品。"""
 
@@ -17,6 +20,7 @@ class Medicine(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     specification: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    category: Mapped[str] = mapped_column(String(20), nullable=False, default="其他")
     expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     last_check_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     next_check_date: Mapped[date | None] = mapped_column(Date, nullable=True)

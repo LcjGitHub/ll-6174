@@ -6,12 +6,16 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
+CATEGORY_CHOICES = ("食品", "医疗", "工具", "其他")
+
+
 class MedicineBase(BaseModel):
     """药品公共字段。"""
 
     name: str = Field(..., min_length=1, max_length=100)
     specification: str = Field("", max_length=100)
     quantity: int = Field(..., ge=0)
+    category: str = Field("其他", max_length=20)
     expiry_date: date | None = None
     last_check_date: date | None = None
     next_check_date: date | None = None
@@ -27,6 +31,7 @@ class MedicineUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=100)
     specification: str | None = Field(None, max_length=100)
     quantity: int | None = Field(None, ge=0)
+    category: str | None = Field(None, max_length=20)
     expiry_date: date | None = None
     last_check_date: date | None = None
     next_check_date: date | None = None

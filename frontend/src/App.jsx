@@ -12,6 +12,7 @@ import {
   Modal,
   Popconfirm,
   Row,
+  Select,
   Space,
   Table,
   Tabs,
@@ -36,6 +37,18 @@ import StorageLocations from './StorageLocations';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
+
+const CATEGORY_OPTIONS = [
+  { value: '食品', label: '食品' },
+  { value: '医疗', label: '医疗' },
+  { value: '工具', label: '工具' },
+  { value: '其他', label: '其他' },
+];
+
+const CATEGORY_FILTER_OPTIONS = [
+  { value: null, label: '全部分类' },
+  ...CATEGORY_OPTIONS,
+];
 
 function formatDate(value) {
   return value ? dayjs(value).format('YYYY-MM-DD') : '—';
@@ -64,18 +77,23 @@ function MedicineLedger() {
   const [itemForm] = Form.useForm();
   const [itemSubmitting, setItemSubmitting] = useState(false);
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
+  const [categoryFilter, setCategoryFilter] = useState(null);
 
   const loadMedicines = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchMedicines();
+      const params = {};
+      if (categoryFilter) {
+        params.category = categoryFilter;
+      }
+      const data = await fetchMedicines(params);
       setMedicines(data);
     } catch {
       message.error('加载药品列表失败');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [categoryFilter]);
 
   useEffect(() => {
     loadMedicines();
@@ -99,6 +117,7 @@ function MedicineLedger() {
     itemForm.resetFields();
     itemForm.setFieldsValue({
       quantity: 1,
+      category: '其他',
     });
     setItemModalVisible(true);
   }
@@ -108,6 +127,7 @@ function MedicineLedger() {
     itemForm.setFieldsValue({
       name: record.name,
       quantity: record.quantity,
+      category: record.category,
       expiry_date: record.expiry_date ? dayjs(record.expiry_date) : null,
       last_check_date: record.last_check_date ? dayjs(record.last_check_date) : null,
       next_check_date: record.next_check_date ? dayjs(record.next_check_date) : null,
@@ -121,6 +141,7 @@ function MedicineLedger() {
       const payload = {
         name: values.name,
         quantity: values.quantity,
+        category: values.category || '其他',
         expiry_date: values.expiry_date ? values.expiry_date.format('YYYY-MM-DD') : null,
         last_check_date: values.last_check_date ? values.last_check_date.format('YYYY-MM-DD') : null,
         next_check_date: values.next_check_date ? values.next_check_date.format('YYYY-MM-DD') : null,
@@ -171,6 +192,13 @@ function MedicineLedger() {
       key: 'name',
       minWidth: 130,
       ellipsis: true,
+    },
+    {
+      title: '分类',
+      dataIndex: 'category',
+      key: 'category',
+      width: 72,
+      render: (value) => value || '—',
     },
     {
       title: '数量',
@@ -295,11 +323,23 @@ function MedicineLedger() {
               alignItems: 'center',
               marginBottom: 12,
               flexShrink: 0,
+              gap: 12,
             }}
           >
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              共 {medicines.length} 项
-            </Text>
+            <Space wrap size={12}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                共 {medicines.length} 项
+              </Text>
+              <Select
+                style={{ width: 130 }}
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                options={CATEGORY_FILTER_OPTIONS}
+                placeholder="选择分类筛选"
+                size="small"
+                allowClear
+              />
+            </Space>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -315,7 +355,7 @@ function MedicineLedger() {
             dataSource={medicines}
             pagination={false}
             size="middle"
-            scroll={{ x: 692, y: 'calc(100vh - 260px)' }}
+            scroll={{ x: 780, y: 'calc(100vh - 260px)' }}
             rowClassName={(record) =>
               record.status_tags?.length ? 'row-highlight' : ''
             }
@@ -342,6 +382,9 @@ function MedicineLedger() {
               <Space direction="vertical" size={4} style={{ marginBottom: 12, flexShrink: 0 }}>
                 <Text type="secondary">
                   当前状态：{renderStatusTags(selectedMedicine.status_tags)}
+                </Text>
+                <Text type="secondary">
+                  分类：{selectedMedicine.category || '—'}
                 </Text>
                 <Text type="secondary">
                   规格：{selectedMedicine.specification || '—'}
@@ -429,6 +472,21 @@ function MedicineLedger() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={10}>
+              <Form.Item
+                label="分类"
+                name="category"
+                rules={[{ required: true, message: '请选择分类' }]}
+              >
+                <Select
+                  style={{ width: '100%' }}
+                  options={CATEGORY_OPTIONS}
+                  placeholder="请选择分类"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col xs={24} sm={24}>
               <Form.Item
                 label="数量"
                 name="quantity"

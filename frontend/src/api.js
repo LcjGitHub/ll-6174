@@ -11,6 +11,7 @@ const api = axios.create({
  * @property {string} name
  * @property {string} specification
  * @property {number} quantity
+ * @property {string} category
  * @property {string|null} expiry_date
  * @property {string|null} last_check_date
  * @property {string|null} next_check_date
@@ -41,9 +42,12 @@ const api = axios.create({
  * @property {string} created_at
  */
 
-/** @returns {Promise<Medicine[]>} */
-export async function fetchMedicines() {
-  const { data } = await api.get('/medicines');
+/**
+ * @param {{ category?: string }} [params]
+ * @returns {Promise<Medicine[]>}
+ */
+export async function fetchMedicines(params) {
+  const { data } = await api.get('/medicines', { params });
   return data;
 }
 
@@ -76,7 +80,7 @@ export async function createRecord(medicineId, payload) {
 }
 
 /**
- * @param {{ name: string, specification?: string, quantity: number, expiry_date?: string|null, last_check_date?: string|null, next_check_date?: string|null }} payload
+ * @param {{ name: string, specification?: string, quantity: number, category?: string, expiry_date?: string|null, last_check_date?: string|null, next_check_date?: string|null }} payload
  * @returns {Promise<Medicine>}
  */
 export async function createMedicine(payload) {
@@ -86,7 +90,7 @@ export async function createMedicine(payload) {
 
 /**
  * @param {number} medicineId
- * @param {{ name?: string, specification?: string, quantity?: number, expiry_date?: string|null, last_check_date?: string|null, next_check_date?: string|null }} payload
+ * @param {{ name?: string, specification?: string, quantity?: number, category?: string, expiry_date?: string|null, last_check_date?: string|null, next_check_date?: string|null }} payload
  * @returns {Promise<Medicine>}
  */
 export async function updateMedicine(medicineId, payload) {
