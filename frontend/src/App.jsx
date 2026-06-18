@@ -190,54 +190,54 @@ function MedicineLedger() {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
-      minWidth: 130,
+      minWidth: 100,
       ellipsis: true,
     },
     {
       title: '分类',
       dataIndex: 'category',
       key: 'category',
-      width: 72,
+      width: 56,
       render: (value) => value || '—',
     },
     {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
-      width: 64,
+      width: 52,
     },
     {
       title: '保质期',
       dataIndex: 'expiry_date',
       key: 'expiry_date',
-      width: 96,
+      width: 80,
       render: (value) => formatDate(value),
     },
     {
       title: '上次检查日',
       dataIndex: 'last_check_date',
       key: 'last_check_date',
-      width: 96,
+      width: 80,
       render: (value) => formatDate(value),
     },
     {
       title: '下次检查日',
       dataIndex: 'next_check_date',
       key: 'next_check_date',
-      width: 96,
+      width: 80,
       render: (value) => formatDate(value),
     },
     {
       title: '状态',
       dataIndex: 'status_tags',
       key: 'status_tags',
-      width: 90,
+      width: 72,
       render: (tags) => renderStatusTags(tags),
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: 100,
       fixed: 'right',
       render: (_, record) => (
         <Space size={4}>
@@ -355,7 +355,7 @@ function MedicineLedger() {
             dataSource={medicines}
             pagination={false}
             size="middle"
-            scroll={{ x: 780, y: 'calc(100vh - 260px)' }}
+            scroll={{ x: 620, y: 'calc(100vh - 260px)' }}
             rowClassName={(record) =>
               record.status_tags?.length ? 'row-highlight' : ''
             }

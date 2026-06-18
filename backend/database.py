@@ -17,18 +17,36 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+_SEED_CATEGORY_MAP = {
+    "布洛芬缓释胶囊": "医疗",
+    "阿莫西林胶囊": "医疗",
+    "感冒灵颗粒": "医疗",
+    "碘伏消毒液": "医疗",
+    "创可贴": "工具",
+    "健胃消食片": "食品",
+    "氯雷他定片": "医疗",
+    "维生素C片": "其他",
+}
+
+
 def migrate_medicines_category_column() -> None:
-    """为已有数据库的 medicines 表添加 category 列（若不存在）。"""
+    """为已有数据库的 medicines 表添加 category 列，并按名称回填示例数据的分类。"""
     inspector = inspect(engine)
     if "medicines" not in inspector.get_table_names():
         return
     columns = [col["name"] for col in inspector.get_columns("medicines")]
-    if "category" not in columns:
-        with engine.connect() as conn:
+    with engine.connect() as conn:
+        if "category" not in columns:
             conn.execute(
                 text("ALTER TABLE medicines ADD COLUMN category VARCHAR(20) NOT NULL DEFAULT '其他'")
             )
             conn.commit()
+        for name, category in _SEED_CATEGORY_MAP.items():
+            conn.execute(
+                text("UPDATE medicines SET category = :category WHERE name = :name AND category = '其他'"),
+                {"category": category, "name": name},
+            )
+        conn.commit()
 
 
 def get_db():
