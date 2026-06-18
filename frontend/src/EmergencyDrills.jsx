@@ -16,12 +16,9 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { createDrill, fetchDrills } from './api';
+import { formatDate } from './dateUtils';
 
 const { Title, Text } = Typography;
-
-function formatDate(value) {
-  return value ? dayjs(value).format('YYYY-MM-DD') : '—';
-}
 
 export default function EmergencyDrills() {
   const [drills, setDrills] = useState([]);

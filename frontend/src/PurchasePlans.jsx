@@ -20,12 +20,9 @@ import {
   fetchPurchasePlans,
   markPurchasePlanCompleted,
 } from './api';
+import { formatDate } from './dateUtils';
 
 const { Text } = Typography;
-
-function formatDate(value) {
-  return value ? dayjs(value).format('YYYY-MM-DD') : '—';
-}
 
 function formatCurrency(value) {
   return value != null ? `¥${Number(value).toFixed(2)}` : '—';

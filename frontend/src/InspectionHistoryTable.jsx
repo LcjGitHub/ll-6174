@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Select, Space, Table, Tooltip, Typography, message } from 'antd';
-import dayjs from 'dayjs';
 import { fetchAllRecords } from './api';
+import { formatDate } from './dateUtils';
 
 const { Text } = Typography;
-
-function formatDate(value) {
-  return value ? dayjs(value).format('YYYY-MM-DD') : '—';
-}
 
 const DEFAULT_LIMIT = 20;
 
