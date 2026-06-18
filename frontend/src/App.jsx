@@ -70,9 +70,19 @@ return (
 );
 }
 
-function MedicineLedger() {
-const [medicines, setMedicines] = useState([]);
-const [loading, setLoading] = useState(false);
+function MedicineLedger({
+medicines,
+setMedicines,
+loading,
+categoryFilter,
+setCategoryFilter,
+statusFilter,
+setStatusFilter,
+searchKeyword,
+setSearchKeyword,
+filteredMedicines,
+loadMedicines,
+}) {
 const [selectedMedicine, setSelectedMedicine] = useState(null);
 const [submitting, setSubmitting] = useState(false);
 const [form] = Form.useForm();
@@ -81,29 +91,6 @@ const [editingItemId, setEditingItemId] = useState(null);
 const [itemForm] = Form.useForm();
 const [itemSubmitting, setItemSubmitting] = useState(false);
 const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
-const [categoryFilter, setCategoryFilter] = useState(null);
-const [statusFilter, setStatusFilter] = useState('all');
-const [searchKeyword, setSearchKeyword] = useState('');
-
-const loadMedicines = useCallback(async () => {
-setLoading(true);
-try {
-const params = {};
-if (categoryFilter) {
-params.category = categoryFilter;
-}
-const data = await fetchMedicines(params);
-setMedicines(data);
-} catch {
-message.error('加载药品列表失败');
-} finally {
-setLoading(false);
-}
-}, [categoryFilter]);
-
-useEffect(() => {
-loadMedicines();
-}, [loadMedicines]);
 
 useEffect(() => {
 if (selectedMedicine) {
@@ -118,12 +105,7 @@ note: '',
 }
 }, [selectedMedicine, form]);
 
-const filteredMedicines = filterItems(medicines, {
-status: statusFilter,
-keyword: searchKeyword,
-});
-
-  const statusCounts = getStatusCounts(filteredMedicines);
+const statusCounts = getStatusCounts(filteredMedicines);
 
 function handleCreateItem() {
 setEditingItemId(null);
@@ -325,15 +307,6 @@ return (
 <Col xs={24} lg={15} style={{ height: '100%' }}>
 <Card
 title="药品清单"
-extra={
-<Button
-icon={<DownloadOutlined />}
-size="small"
-onClick={() => exportInventoryList(filteredMedicines)}
->
-导出清单
-</Button>
-}
 bordered={false}
 styles={{ body: { height: '100%', padding: 16, display: 'flex', flexDirection: 'column' } }}
 style={{ height: '100%' }}
@@ -587,11 +560,67 @@ itemForm.resetFields();
 }
 
 export default function App() {
+const [medicines, setMedicines] = useState([]);
+const [loading, setLoading] = useState(false);
+const [categoryFilter, setCategoryFilter] = useState(null);
+const [statusFilter, setStatusFilter] = useState('all');
+const [searchKeyword, setSearchKeyword] = useState('');
+const [activeTab, setActiveTab] = useState('medicine');
+
+const loadMedicines = useCallback(async () => {
+setLoading(true);
+try {
+const params = {};
+if (categoryFilter) {
+params.category = categoryFilter;
+}
+const data = await fetchMedicines(params);
+setMedicines(data);
+} catch {
+message.error('加载药品列表失败');
+} finally {
+setLoading(false);
+}
+}, [categoryFilter]);
+
+useEffect(() => {
+loadMedicines();
+}, [loadMedicines]);
+
+const filteredMedicines = filterItems(medicines, {
+status: statusFilter,
+keyword: searchKeyword,
+});
+
+function handleExport() {
+if (activeTab !== 'medicine') {
+return;
+}
+const success = exportInventoryList(filteredMedicines);
+if (!success) {
+message.warning('暂无数据可导出');
+}
+}
+
 const tabItems = [
 {
 key: 'medicine',
 label: '药品台账',
-children: <MedicineLedger />,
+children: (
+<MedicineLedger
+medicines={medicines}
+setMedicines={setMedicines}
+loading={loading}
+categoryFilter={categoryFilter}
+setCategoryFilter={setCategoryFilter}
+statusFilter={statusFilter}
+setStatusFilter={setStatusFilter}
+searchKeyword={searchKeyword}
+setSearchKeyword={setSearchKeyword}
+filteredMedicines={filteredMedicines}
+loadMedicines={loadMedicines}
+/>
+),
 },
 {
 key: 'contacts',
@@ -617,14 +646,23 @@ children: <PurchasePlans />,
 
 return (
 <Layout style={{ height: '100vh', overflow: 'hidden' }}>
-<Header style={{ background: '#1677ff', padding: '0 24px' }}>
-<Title level={3} style={{ color: '#fff', margin: '16px 0', lineHeight: 1.4 }}>
+<Header style={{ background: '#1677ff', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+<Title level={3} style={{ color: '#fff', margin: 0, lineHeight: 1.4 }}>
 家庭药品台账
 </Title>
+<Button
+icon={<DownloadOutlined />}
+size="small"
+onClick={handleExport}
+disabled={activeTab !== 'medicine'}
+>
+导出清单
+</Button>
 </Header>
 <Content style={{ padding: '16px 24px', maxWidth: 1400, margin: '0 auto', width: '100%', height: 'calc(100vh - 64px)', boxSizing: 'border-box' }}>
 <Tabs
-defaultActiveKey="medicine"
+activeKey={activeTab}
+onChange={setActiveTab}
 items={tabItems}
 size="large"
 style={{ height: '100%' }}
