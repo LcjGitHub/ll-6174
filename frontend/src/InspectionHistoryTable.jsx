@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Select, Space, Table, Tooltip, Typography, message } from 'antd';
 import dayjs from 'dayjs';
 import { fetchAllRecords } from './api';
@@ -15,6 +15,9 @@ export default function InspectionHistoryTable({ medicines, refreshTrigger }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedMedicineId, setSelectedMedicineId] = useState(null);
+  const [tableScrollY, setTableScrollY] = useState(200);
+  const containerRef = useRef(null);
+  const headerRef = useRef(null);
 
   const medicineOptions = useMemo(() => {
     const options = [{ value: null, label: '全部物品' }];
@@ -40,15 +43,33 @@ export default function InspectionHistoryTable({ medicines, refreshTrigger }) {
     }
   }, [selectedMedicineId]);
 
+  const updateTableHeight = useCallback(() => {
+    if (containerRef.current && headerRef.current) {
+      const containerHeight = containerRef.current.clientHeight;
+      const headerHeight = headerRef.current.clientHeight;
+      const tableHeaderHeight = 40;
+      setTableScrollY(Math.max(100, containerHeight - headerHeight - tableHeaderHeight));
+    }
+  }, []);
+
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
 
   useEffect(() => {
-    if (refreshTrigger) {
+    if (refreshTrigger != null) {
       loadHistory();
     }
   }, [refreshTrigger, loadHistory]);
+
+  useEffect(() => {
+    const timer = setTimeout(updateTableHeight, 50);
+    window.addEventListener('resize', updateTableHeight);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateTableHeight);
+    };
+  }, [updateTableHeight]);
 
   const columns = [
     {
@@ -82,22 +103,27 @@ export default function InspectionHistoryTable({ medicines, refreshTrigger }) {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <Space style={{ marginBottom: 12, flexShrink: 0 }}>
-        <Text strong style={{ fontSize: 15 }}>检查历史</Text>
-        <Select
-          style={{ width: 180 }}
-          value={selectedMedicineId}
-          onChange={setSelectedMedicineId}
-          options={medicineOptions}
-          placeholder="选择物品筛选"
-          size="small"
-          allowClear
-        />
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          共 {records.length} 条 · 最近 {DEFAULT_LIMIT} 条
-        </Text>
-      </Space>
+    <div
+      ref={containerRef}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
+    >
+      <div ref={headerRef} style={{ flexShrink: 0, marginBottom: 8 }}>
+        <Space wrap>
+          <Text strong style={{ fontSize: 15 }}>检查历史</Text>
+          <Select
+            style={{ width: 180 }}
+            value={selectedMedicineId}
+            onChange={setSelectedMedicineId}
+            options={medicineOptions}
+            placeholder="选择物品筛选"
+            size="small"
+            allowClear
+          />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            共 {records.length} 条 · 最近 {DEFAULT_LIMIT} 条
+          </Text>
+        </Space>
+      </div>
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <Table
           rowKey="id"
@@ -106,7 +132,7 @@ export default function InspectionHistoryTable({ medicines, refreshTrigger }) {
           dataSource={records}
           pagination={false}
           size="small"
-          scroll={{ y: 'calc(100% - 40px)' }}
+          scroll={{ x: 400, y: tableScrollY }}
         />
       </div>
     </div>

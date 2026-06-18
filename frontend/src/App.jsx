@@ -26,7 +26,6 @@ import {
   createRecord,
   deleteMedicine,
   fetchMedicines,
-  fetchRecords,
   updateMedicine,
 } from './api';
 import EmergencyContacts from './EmergencyContacts';
@@ -58,8 +57,6 @@ function MedicineLedger() {
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
-  const [records, setRecords] = useState([]);
-  const [recordsLoading, setRecordsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
   const [itemModalVisible, setItemModalVisible] = useState(false);
@@ -80,25 +77,12 @@ function MedicineLedger() {
     }
   }, []);
 
-  const loadRecords = useCallback(async (medicineId) => {
-    setRecordsLoading(true);
-    try {
-      const data = await fetchRecords(medicineId);
-      setRecords(data);
-    } catch {
-      message.error('加载检查记录失败');
-    } finally {
-      setRecordsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     loadMedicines();
   }, [loadMedicines]);
 
   useEffect(() => {
     if (selectedMedicine) {
-      loadRecords(selectedMedicine.id);
       form.setFieldsValue({
         check_date: dayjs(),
         quantity_checked: selectedMedicine.quantity,
@@ -108,7 +92,7 @@ function MedicineLedger() {
         note: '',
       });
     }
-  }, [selectedMedicine, loadRecords, form]);
+  }, [selectedMedicine, form]);
 
   function handleCreateItem() {
     setEditingItemId(null);
@@ -172,9 +156,9 @@ function MedicineLedger() {
       message.success('物品已删除');
       if (selectedMedicine?.id === record.id) {
         setSelectedMedicine(null);
-        setRecords([]);
       }
       await loadMedicines();
+      setHistoryRefreshTrigger((prev) => prev + 1);
     } catch {
       message.error('删除物品失败');
     }
@@ -286,11 +270,10 @@ function MedicineLedger() {
       if (current) {
         setSelectedMedicine(current);
       }
-      await loadRecords(selectedMedicine.id);
       form.setFieldValue('note', '');
       setHistoryRefreshTrigger((prev) => prev + 1);
     } catch {
-      message.error('保存盘点记录失败');
+      message.error('保存检查记录失败');
     } finally {
       setSubmitting(false);
     }
@@ -383,9 +366,9 @@ function MedicineLedger() {
                   </Col>
                   <Col span={12}>
                     <Form.Item
-                      label="盘点数量"
+                      label="检查数量"
                       name="quantity_checked"
-                      rules={[{ required: true, message: '请输入盘点数量' }]}
+                      rules={[{ required: true, message: '请输入检查数量' }]}
                     >
                       <InputNumber min={0} style={{ width: '100%' }} />
                     </Form.Item>
@@ -395,11 +378,11 @@ function MedicineLedger() {
                   <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item label="备注" name="note">
-                  <Input.TextArea rows={2} placeholder="盘点情况说明（可选）" />
+                  <Input.TextArea rows={2} placeholder="检查情况说明（可选）" />
                 </Form.Item>
                 <Form.Item style={{ marginBottom: 8 }}>
                   <Button type="primary" htmlType="submit" loading={submitting}>
-                    提交盘点
+                    提交检查
                   </Button>
                 </Form.Item>
               </Form>
