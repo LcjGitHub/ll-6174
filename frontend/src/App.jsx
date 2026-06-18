@@ -122,7 +122,7 @@ function MedicineLedger() {
     keyword: searchKeyword,
   });
 
-  const statusCounts = getStatusCounts(medicines);
+  const statusCounts = getStatusCounts(filteredMedicines);
 
   function handleCreateItem() {
     setEditingItemId(null);
