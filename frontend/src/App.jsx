@@ -12,6 +12,7 @@ import {
   Modal,
   Popconfirm,
   Row,
+  Segmented,
   Select,
   Space,
   Table,
@@ -34,8 +35,10 @@ import EmergencyDrills from './EmergencyDrills';
 import InspectionHistoryTable from './InspectionHistoryTable';
 import PurchasePlans from './PurchasePlans';
 import StorageLocations from './StorageLocations';
+import { filterItems, getStatusCounts, STATUS_OPTIONS } from './filterUtils';
 
 const { Header, Content } = Layout;
+const { Search } = Input;
 const { Title, Text } = Typography;
 
 const CATEGORY_OPTIONS = [
@@ -78,6 +81,8 @@ function MedicineLedger() {
   const [itemSubmitting, setItemSubmitting] = useState(false);
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const loadMedicines = useCallback(async () => {
     setLoading(true);
@@ -111,6 +116,13 @@ function MedicineLedger() {
       });
     }
   }, [selectedMedicine, form]);
+
+  const filteredMedicines = filterItems(medicines, {
+    status: statusFilter,
+    keyword: searchKeyword,
+  });
+
+  const statusCounts = getStatusCounts(medicines);
 
   function handleCreateItem() {
     setEditingItemId(null);
@@ -316,43 +328,70 @@ function MedicineLedger() {
           styles={{ body: { height: '100%', padding: 16, display: 'flex', flexDirection: 'column' } }}
           style={{ height: '100%' }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-              flexShrink: 0,
-              gap: 12,
-            }}
-          >
-            <Space wrap size={12}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                共 {medicines.length} 项
+          <Space direction="vertical" size={10} style={{ width: '100%', flexShrink: 0 }}>
+            <Space wrap size={16}>
+              <Text strong>
+                共 <span style={{ color: '#1677ff' }}>{filteredMedicines.length}</span> / {medicines.length} 项
               </Text>
-              <Select
-                style={{ width: 130 }}
-                value={categoryFilter}
-                onChange={setCategoryFilter}
-                options={CATEGORY_FILTER_OPTIONS}
-                placeholder="选择分类筛选"
-                size="small"
-                allowClear
-              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                正常 <span style={{ color: '#52c41a', fontWeight: 600 }}>{statusCounts.normal}</span>
+              </Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                待检查 <span style={{ color: '#faad14', fontWeight: 600 }}>{statusCounts.check_due}</span>
+              </Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                过期 <span style={{ color: '#ff4d4f', fontWeight: 600 }}>{statusCounts.expired}</span>
+              </Text>
             </Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreateItem}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
             >
-              新增物品
-            </Button>
-          </div>
+              <Space wrap size={10}>
+                <Segmented
+                  size="small"
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={STATUS_OPTIONS}
+                />
+                <Select
+                  style={{ width: 130 }}
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  options={CATEGORY_FILTER_OPTIONS}
+                  placeholder="选择分类筛选"
+                  size="small"
+                  allowClear
+                />
+                <Search
+                  placeholder="搜索物品名称"
+                  size="small"
+                  allowClear
+                  style={{ width: 200 }}
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  onSearch={setSearchKeyword}
+                />
+              </Space>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreateItem}
+              >
+                新增物品
+              </Button>
+            </div>
+          </Space>
           <Table
             rowKey="id"
             loading={loading}
             columns={columns}
-            dataSource={medicines}
+            dataSource={filteredMedicines}
             pagination={false}
             size="middle"
             scroll={{ x: 620, y: 'calc(100vh - 260px)' }}
