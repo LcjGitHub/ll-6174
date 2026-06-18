@@ -55,6 +55,33 @@ export async function createRecord(medicineId, payload) {
 }
 
 /**
+ * @param {{ name: string, specification?: string, quantity: number, expiry_date?: string|null, last_check_date?: string|null, next_check_date?: string|null }} payload
+ * @returns {Promise<Medicine>}
+ */
+export async function createMedicine(payload) {
+  const { data } = await api.post('/medicines', payload);
+  return data;
+}
+
+/**
+ * @param {number} medicineId
+ * @param {{ name?: string, specification?: string, quantity?: number, expiry_date?: string|null, last_check_date?: string|null, next_check_date?: string|null }} payload
+ * @returns {Promise<Medicine>}
+ */
+export async function updateMedicine(medicineId, payload) {
+  const { data } = await api.put(`/medicines/${medicineId}`, payload);
+  return data;
+}
+
+/**
+ * @param {number} medicineId
+ * @returns {Promise<void>}
+ */
+export async function deleteMedicine(medicineId) {
+  await api.delete(`/medicines/${medicineId}`);
+}
+
+/**
  * @typedef {Object} EmergencyContact
  * @property {number} id
  * @property {string} name
