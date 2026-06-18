@@ -17,6 +17,7 @@ from schemas import (
     EmergencyDrillResponse,
     InventoryRecordCreate,
     InventoryRecordResponse,
+    InventoryRecordWithNameResponse,
     MedicineCreate,
     MedicineResponse,
     MedicineUpdate,
@@ -178,6 +179,50 @@ def create_record(
     db.commit()
     db.refresh(record)
     return record
+
+
+@app.get(
+    "/api/records",
+    response_model=list[InventoryRecordWithNameResponse],
+)
+def list_all_records(
+    medicine_id: int | None = None,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+) -> list[InventoryRecordWithNameResponse]:
+    """获取全部盘点记录，支持按药品筛选，按检查日期倒序排列。"""
+    query = db.query(
+        InventoryRecord.id,
+        InventoryRecord.medicine_id,
+        InventoryRecord.check_date,
+        InventoryRecord.quantity_checked,
+        InventoryRecord.note,
+        InventoryRecord.next_check_date,
+        InventoryRecord.created_at,
+        Medicine.name.label("medicine_name"),
+    ).join(Medicine, InventoryRecord.medicine_id == Medicine.id)
+
+    if medicine_id is not None:
+        query = query.filter(InventoryRecord.medicine_id == medicine_id)
+
+    records = query.order_by(
+        InventoryRecord.check_date.desc(),
+        InventoryRecord.id.desc(),
+    ).limit(limit).all()
+
+    return [
+        InventoryRecordWithNameResponse(
+            id=r.id,
+            medicine_id=r.medicine_id,
+            check_date=r.check_date,
+            quantity_checked=r.quantity_checked,
+            note=r.note,
+            next_check_date=r.next_check_date,
+            created_at=r.created_at,
+            medicine_name=r.medicine_name,
+        )
+        for r in records
+    ]
 
 
 @app.get("/api/health")

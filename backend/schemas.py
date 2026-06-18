@@ -65,6 +65,12 @@ class InventoryRecordResponse(BaseModel):
     created_at: datetime
 
 
+class InventoryRecordWithNameResponse(InventoryRecordResponse):
+    """盘点记录响应（含药品名称）。"""
+
+    medicine_name: str
+
+
 PHONE_PATTERN = r"^1[3-9]\d{9}$"
 
 

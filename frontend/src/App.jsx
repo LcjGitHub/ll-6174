@@ -4,6 +4,7 @@ import {
   Card,
   Col,
   DatePicker,
+  Divider,
   Form,
   Input,
   InputNumber,
@@ -30,6 +31,7 @@ import {
 } from './api';
 import EmergencyContacts from './EmergencyContacts';
 import EmergencyDrills from './EmergencyDrills';
+import InspectionHistoryTable from './InspectionHistoryTable';
 import PurchasePlans from './PurchasePlans';
 import StorageLocations from './StorageLocations';
 
@@ -64,6 +66,7 @@ function MedicineLedger() {
   const [editingItemId, setEditingItemId] = useState(null);
   const [itemForm] = Form.useForm();
   const [itemSubmitting, setItemSubmitting] = useState(false);
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
 
   const loadMedicines = useCallback(async () => {
     setLoading(true);
@@ -285,6 +288,7 @@ function MedicineLedger() {
       }
       await loadRecords(selectedMedicine.id);
       form.setFieldValue('note', '');
+      setHistoryRefreshTrigger((prev) => prev + 1);
     } catch {
       message.error('保存盘点记录失败');
     } finally {
@@ -399,44 +403,12 @@ function MedicineLedger() {
                   </Button>
                 </Form.Item>
               </Form>
-              <div className="records-section" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                <Text strong style={{ marginBottom: 8, flexShrink: 0 }}>历史检查记录</Text>
-                <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-                  <Table
-                    rowKey="id"
-                    size="small"
-                    loading={recordsLoading}
-                    pagination={{ pageSize: 5, hideOnSinglePage: true }}
-                    dataSource={records}
-                    scroll={{ y: 'calc(100vh - 480px)' }}
-                    columns={[
-                      {
-                        title: '盘点日',
-                        dataIndex: 'check_date',
-                        width: 100,
-                        render: (v) => formatDate(v),
-                      },
-                      {
-                        title: '数量',
-                        dataIndex: 'quantity_checked',
-                        width: 60,
-                        render: (v) => (v != null ? v : '—'),
-                      },
-                      {
-                        title: '下次盘点',
-                        dataIndex: 'next_check_date',
-                        width: 100,
-                        render: (v) => formatDate(v),
-                      },
-                      {
-                        title: '备注',
-                        dataIndex: 'note',
-                        ellipsis: true,
-                        render: (v) => v || '—',
-                      },
-                    ]}
-                  />
-                </div>
+              <Divider style={{ margin: '8px 0', flexShrink: 0 }} />
+              <div className="history-section" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                <InspectionHistoryTable
+                  medicines={medicines}
+                  refreshTrigger={historyRefreshTrigger}
+                />
               </div>
             </div>
           ) : (

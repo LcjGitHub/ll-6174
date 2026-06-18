@@ -29,6 +29,18 @@ const api = axios.create({
  * @property {string} created_at
  */
 
+/**
+ * @typedef {Object} InventoryRecordWithName
+ * @property {number} id
+ * @property {number} medicine_id
+ * @property {string} medicine_name
+ * @property {string} check_date
+ * @property {number|null} quantity_checked
+ * @property {string|null} note
+ * @property {string|null} next_check_date
+ * @property {string} created_at
+ */
+
 /** @returns {Promise<Medicine[]>} */
 export async function fetchMedicines() {
   const { data } = await api.get('/medicines');
@@ -41,6 +53,15 @@ export async function fetchMedicines() {
  */
 export async function fetchRecords(medicineId) {
   const { data } = await api.get(`/medicines/${medicineId}/records`);
+  return data;
+}
+
+/**
+ * @param {{ medicine_id?: number, limit?: number }} [params]
+ * @returns {Promise<InventoryRecordWithName[]>}
+ */
+export async function fetchAllRecords(params) {
+  const { data } = await api.get('/records', { params });
   return data;
 }
 
