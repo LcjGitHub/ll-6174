@@ -21,7 +21,7 @@ Tag,
 Typography,
 message,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
 createMedicine,
@@ -36,6 +36,7 @@ import InspectionHistoryTable from './InspectionHistoryTable';
 import PurchasePlans from './PurchasePlans';
 import StorageLocations from './StorageLocations';
 import { filterItems, getStatusCounts, STATUS_OPTIONS } from './filterUtils';
+import { exportInventoryList } from './exportUtils';
 
 const { Header, Content } = Layout;
 const { Search } = Input;
@@ -122,7 +123,6 @@ status: statusFilter,
 keyword: searchKeyword,
 });
 
-  const statusCounts = getStatusCounts(medicines);
   const statusCounts = getStatusCounts(filteredMedicines);
 
 function handleCreateItem() {
@@ -325,6 +325,15 @@ return (
 <Col xs={24} lg={15} style={{ height: '100%' }}>
 <Card
 title="药品清单"
+extra={
+<Button
+icon={<DownloadOutlined />}
+size="small"
+onClick={() => exportInventoryList(filteredMedicines)}
+>
+导出清单
+</Button>
+}
 bordered={false}
 styles={{ body: { height: '100%', padding: 16, display: 'flex', flexDirection: 'column' } }}
 style={{ height: '100%' }}
