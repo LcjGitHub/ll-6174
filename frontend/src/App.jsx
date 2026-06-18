@@ -47,7 +47,7 @@ function renderStatusTags(tags = []) {
   return (
     <Space size={4} wrap>
       {tags.includes('expired') && <Tag color="error">已过期</Tag>}
-      {tags.includes('check_due') && <Tag color="warning">待盘点</Tag>}
+      {tags.includes('check_due') && <Tag color="warning">待检查</Tag>}
     </Space>
   );
 }
@@ -83,7 +83,7 @@ function MedicineLedger() {
       const data = await fetchRecords(medicineId);
       setRecords(data);
     } catch {
-      message.error('加载盘点记录失败');
+      message.error('加载检查记录失败');
     } finally {
       setRecordsLoading(false);
     }
@@ -120,7 +120,6 @@ function MedicineLedger() {
     setEditingItemId(record.id);
     itemForm.setFieldsValue({
       name: record.name,
-      specification: record.specification || '',
       quantity: record.quantity,
       expiry_date: record.expiry_date ? dayjs(record.expiry_date) : null,
       last_check_date: record.last_check_date ? dayjs(record.last_check_date) : null,
@@ -134,7 +133,6 @@ function MedicineLedger() {
     try {
       const payload = {
         name: values.name,
-        specification: values.specification || '',
         quantity: values.quantity,
         expiry_date: values.expiry_date ? values.expiry_date.format('YYYY-MM-DD') : null,
         last_check_date: values.last_check_date ? values.last_check_date.format('YYYY-MM-DD') : null,
@@ -184,58 +182,50 @@ function MedicineLedger() {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
-      minWidth: 160,
+      minWidth: 130,
       ellipsis: true,
-    },
-    {
-      title: '规格',
-      dataIndex: 'specification',
-      key: 'specification',
-      width: 140,
-      ellipsis: true,
-      render: (value) => value || '—',
     },
     {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
-      width: 80,
+      width: 64,
     },
     {
       title: '保质期',
       dataIndex: 'expiry_date',
       key: 'expiry_date',
-      width: 120,
+      width: 96,
       render: (value) => formatDate(value),
     },
     {
       title: '上次检查日',
       dataIndex: 'last_check_date',
       key: 'last_check_date',
-      width: 120,
+      width: 96,
       render: (value) => formatDate(value),
     },
     {
       title: '下次检查日',
       dataIndex: 'next_check_date',
       key: 'next_check_date',
-      width: 120,
+      width: 96,
       render: (value) => formatDate(value),
     },
     {
       title: '状态',
       dataIndex: 'status_tags',
       key: 'status_tags',
-      width: 160,
+      width: 90,
       render: (tags) => renderStatusTags(tags),
     },
     {
       title: '操作',
       key: 'action',
-      width: 160,
+      width: 120,
       fixed: 'right',
       render: (_, record) => (
-        <Space size={8}>
+        <Space size={4}>
           <Button
             type="link"
             size="small"
@@ -286,7 +276,7 @@ function MedicineLedger() {
           : undefined,
         note: values.note || undefined,
       });
-      message.success('盘点记录已保存');
+      message.success('检查记录已保存');
       await loadMedicines();
       const refreshed = await fetchMedicines();
       const current = refreshed.find((m) => m.id === selectedMedicine.id);
@@ -306,23 +296,31 @@ function MedicineLedger() {
     <Row gutter={[16, 16]} style={{ height: '100%' }}>
       <Col xs={24} lg={15} style={{ height: '100%' }}>
         <Card
-          title={
-            <Space>
-              <span>药品清单</span>
-              <Button
-                type="primary"
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={handleCreateItem}
-              >
-                新增物品
-              </Button>
-            </Space>
-          }
+          title="药品清单"
           bordered={false}
           styles={{ body: { height: '100%', padding: 16, display: 'flex', flexDirection: 'column' } }}
           style={{ height: '100%' }}
         >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
+              flexShrink: 0,
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              共 {medicines.length} 项
+            </Text>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreateItem}
+            >
+              新增物品
+            </Button>
+          </div>
           <Table
             rowKey="id"
             loading={loading}
@@ -330,7 +328,7 @@ function MedicineLedger() {
             dataSource={medicines}
             pagination={false}
             size="middle"
-            scroll={{ x: 1020, y: 'calc(100vh - 200px)' }}
+            scroll={{ x: 692, y: 'calc(100vh - 260px)' }}
             rowClassName={(record) =>
               record.status_tags?.length ? 'row-highlight' : ''
             }
@@ -347,7 +345,7 @@ function MedicineLedger() {
       </Col>
       <Col xs={24} lg={9} style={{ height: '100%' }}>
         <Card
-          title={selectedMedicine ? `盘点记录 · ${selectedMedicine.name}` : '盘点记录'}
+          title={selectedMedicine ? `检查记录 · ${selectedMedicine.name}` : '检查记录'}
           bordered={false}
           style={{ height: '100%' }}
           styles={{ body: { display: 'flex', flexDirection: 'column', height: '100%', padding: 16 } }}
@@ -372,9 +370,9 @@ function MedicineLedger() {
                 <Row gutter={12}>
                   <Col span={12}>
                     <Form.Item
-                      label="盘点日期"
+                      label="检查日期"
                       name="check_date"
-                      rules={[{ required: true, message: '请选择盘点日期' }]}
+                      rules={[{ required: true, message: '请选择检查日期' }]}
                     >
                       <DatePicker style={{ width: '100%' }} />
                     </Form.Item>
@@ -389,7 +387,7 @@ function MedicineLedger() {
                     </Form.Item>
                   </Col>
                 </Row>
-                <Form.Item label="下次盘点日" name="next_check_date">
+                <Form.Item label="下次检查日" name="next_check_date">
                   <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item label="备注" name="note">
@@ -402,7 +400,7 @@ function MedicineLedger() {
                 </Form.Item>
               </Form>
               <div className="records-section" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                <Text strong style={{ marginBottom: 8, flexShrink: 0 }}>历史盘点记录</Text>
+                <Text strong style={{ marginBottom: 8, flexShrink: 0 }}>历史检查记录</Text>
                 <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
                   <Table
                     rowKey="id"
@@ -442,7 +440,7 @@ function MedicineLedger() {
               </div>
             </div>
           ) : (
-            <Text type="secondary">请在左侧表格中点击一种药品，填写盘点记录。</Text>
+            <Text type="secondary">请在左侧表格中点击一种药品，填写检查记录。</Text>
           )}
         </Card>
       </Col>
@@ -476,13 +474,6 @@ function MedicineLedger() {
               </Form.Item>
             </Col>
             <Col xs={24} sm={10}>
-              <Form.Item label="规格" name="specification">
-                <Input maxLength={100} placeholder="规格/型号（可选）" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col xs={24} sm={8}>
               <Form.Item
                 label="数量"
                 name="quantity"
@@ -491,18 +482,20 @@ function MedicineLedger() {
                 <InputNumber min={0} style={{ width: '100%' }} placeholder="数量" />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={16}>
+          </Row>
+          <Row gutter={12}>
+            <Col xs={24} sm={12}>
               <Form.Item label="保质期" name="expiry_date">
                 <DatePicker style={{ width: '100%' }} placeholder="选择保质期（可选）" />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={12}>
             <Col xs={24} sm={12}>
               <Form.Item label="上次检查日" name="last_check_date">
                 <DatePicker style={{ width: '100%' }} placeholder="可选" />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={12}>
             <Col xs={24} sm={12}>
               <Form.Item label="下次检查日" name="next_check_date">
                 <DatePicker style={{ width: '100%' }} placeholder="可选" />
